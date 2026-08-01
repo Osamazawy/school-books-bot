@@ -1,5 +1,10 @@
-import asyncio
 import sys
+import os
+import asyncio
+
+# ضمان إضافة مسار المشروع الحالي لمسارات بايثون لمنع ModuleNotFoundError
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from telegram.ext import ApplicationBuilder, Defaults
 from telegram.constants import ParseMode
 
