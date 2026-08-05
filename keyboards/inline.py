@@ -50,7 +50,7 @@ def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> Inline
     if use_grid and row:
         keyboard.append(row[::-1])
 
-    keyboard.append([InlineKeyboardButton("🔙  العودة للمراحل", callback_data="user_stages")])
+    keyboard.append([InlineKeyboardButton("↩️  العودة للمراحل", callback_data="user_stages")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -60,7 +60,7 @@ def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int) -> InlineKeyb
     for book in books:
         keyboard.append([InlineKeyboardButton(f"📘  {book['title']}", callback_data=f"user_book_{book['id']}")])
         
-    keyboard.append([InlineKeyboardButton("🔙  العودة للصفوف", callback_data=f"user_stage_{stage_id}")])
+    keyboard.append([InlineKeyboardButton("↩️  العودة للصفوف", callback_data=f"user_stage_{stage_id}")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -68,7 +68,7 @@ def get_book_details_keyboard(book_id: int, class_id: int) -> InlineKeyboardMark
     """أزرار تفاصيل الكتاب للمستخدم بعرض كامل."""
     keyboard = [
         [InlineKeyboardButton("📥  تحميل الكتاب (PDF)", callback_data=f"dl_book_{book_id}")],
-        [InlineKeyboardButton("🔙  العودة للكتب", callback_data=f"user_class_{class_id}")]
+        [InlineKeyboardButton("↩️  العودة للكتب", callback_data=f"user_class_{class_id}")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
@@ -113,7 +113,7 @@ def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboa
     if use_grid and row:
         keyboard.append(row[::-1])
     keyboard.append([InlineKeyboardButton("➕  إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
-    keyboard.append([InlineKeyboardButton("🔙  لوحة التحكم", callback_data="admin_panel")])
+    keyboard.append([InlineKeyboardButton("↩️  لوحة التحكم", callback_data="admin_panel")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -139,7 +139,7 @@ def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int
         InlineKeyboardButton("🗑️ حذف المرحلة", callback_data=f"adm_del_stg_confirm_{stage_id}"),
         InlineKeyboardButton("✏️ تعديل الاسم", callback_data=f"adm_ren_stg_{stage_id}")
     ])
-    keyboard.append([InlineKeyboardButton("🔙  قائمة المراحل", callback_data="adm_manage_curriculum")])
+    keyboard.append([InlineKeyboardButton("↩️  قائمة المراحل", callback_data="adm_manage_curriculum")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -155,7 +155,7 @@ def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: i
         InlineKeyboardButton("✏️ تعديل اسم الصف", callback_data=f"adm_ren_cls_{class_id}")
     ])
     keyboard.append([InlineKeyboardButton("🗑️  حذف هذا الصف بالكامل", callback_data=f"adm_del_cls_confirm_{class_id}")])
-    keyboard.append([InlineKeyboardButton("🔙  قائمة الصفوف", callback_data=f"adm_view_cls_{stage_id}")])
+    keyboard.append([InlineKeyboardButton("↩️  قائمة الصفوف", callback_data=f"adm_view_cls_{stage_id}")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -167,6 +167,6 @@ def get_admin_single_book_card_keyboard(book_id: int, class_id: int) -> InlineKe
             InlineKeyboardButton("🗑️ حذف الكتاب", callback_data=f"adm_del_bk_confirm_{book_id}"),
             InlineKeyboardButton("✏️ تعديل العنوان", callback_data=f"adm_ren_bk_{book_id}")
         ],
-        [InlineKeyboardButton("🔙  قائمة كتب الصف", callback_data=f"adm_view_bks_{class_id}")]
+        [InlineKeyboardButton("↩️  قائمة كتب الصف", callback_data=f"adm_view_bks_{class_id}")]
     ]
     return InlineKeyboardMarkup(keyboard)
