@@ -55,9 +55,12 @@ async def ensure_bot_initialized():
 @app.get("/{full_path:path}")
 @app.get("/")
 async def handle_get_requests(request: Request, full_path: str = ""):
+    headers_str = str(dict(request.headers)).lower()
     raw_path = str(request.url.path).lower()
+    query_str = str(request.query_params).lower()
+    combined = f"{full_path} {raw_path} {query_str} {headers_str}".lower()
     
-    if "set_webhook" in raw_path or "set_webhook" in full_path.lower():
+    if "set_webhook" in combined:
         clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
         if not clean_webhook_url:
             return {"error": "WEBHOOK_URL environment variable is missing"}
@@ -72,8 +75,11 @@ async def handle_get_requests(request: Request, full_path: str = ""):
 @app.post("/{full_path:path}")
 @app.post("/")
 async def handle_post_requests(request: Request, full_path: str = ""):
+    headers_str = str(dict(request.headers)).lower()
     raw_path = str(request.url.path).lower()
-    if "webhook" in raw_path or "webhook" in full_path.lower():
+    combined = f"{full_path} {raw_path} {headers_str}".lower()
+    
+    if "webhook" in combined:
         try:
             data = await request.json()
             await ensure_bot_initialized()
