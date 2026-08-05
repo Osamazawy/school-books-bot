@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
-    """القائمة الرئيسية للبوت (أزرار ممركزة بعرض كامل وأيقونات ناصعة)."""
+    """القائمة الرئيسية للبوت (أزرار رئيسية علوية بعرض كامل وممركزة)."""
     keyboard = [
         [InlineKeyboardButton("🏛️  المراحل الدراسية  🏛️", callback_data="user_stages")],
         [InlineKeyboardButton("🔍  البحث عن كتاب  🔍", callback_data="user_search")]
@@ -13,7 +13,7 @@ def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
 
 
 def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض عناصر المراحل للمستخدم بعمودين محاذيين لليمين RTL."""
+    """عرض عناصر المراحل للمستخدم بعمودين محاذيين لليمين RTL، والأزرار الرئيسية بعرض كامل."""
     keyboard = []
     row = []
     for stage in stages:
@@ -29,7 +29,7 @@ def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
 
 
 def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض عناصر الصفوف للمستخدم بعمودين محاذيين لليمين RTL."""
+    """عرض عناصر الصفوف للمستخدم بعمودين محاذيين لليمين RTL، والأزرار الرئيسية بعرض كامل."""
     keyboard = []
     row = []
     for cls in classes:
@@ -45,7 +45,7 @@ def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> Inline
 
 
 def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض كتب الصف للمستخدم العادي."""
+    """عرض كتب الصف للمستخدم العادي بعرض كامل وممركز."""
     keyboard = []
     for book in books:
         keyboard.append([InlineKeyboardButton(f"📘  {book['title']}  📘", callback_data=f"user_book_{book['id']}")])
@@ -55,7 +55,7 @@ def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int) -> InlineKeyb
 
 
 def get_book_details_keyboard(book_id: int, class_id: int) -> InlineKeyboardMarkup:
-    """أزرار تفاصيل الكتاب للمستخدم."""
+    """أزرار تفاصيل الكتاب للمستخدم بعرض كامل."""
     keyboard = [
         [InlineKeyboardButton("📥  تحميل الكتاب (PDF)  📥", callback_data=f"dl_book_{book_id}")],
         [InlineKeyboardButton("🔙  العودة للكتب  🔙", callback_data=f"user_class_{class_id}")]
@@ -64,7 +64,7 @@ def get_book_details_keyboard(book_id: int, class_id: int) -> InlineKeyboardMark
 
 
 def get_search_results_keyboard(books: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """أزرار نتائج البحث."""
+    """أزرار نتائج البحث بعرض كامل."""
     keyboard = []
     for book in books:
         button_text = f"📘 {book['title']} ({book['class_name']} - {book['stage_name']})"
@@ -76,7 +76,7 @@ def get_search_results_keyboard(books: List[Dict[str, Any]]) -> InlineKeyboardMa
 # ==================== لوحة التحكم وكروت المشرفين المباشرة (Direct Admin 2026) ====================
 
 def get_admin_main_keyboard() -> InlineKeyboardMarkup:
-    """لوحة تحكم المشرف الرئيسية (أزرار ممركزة بعرض كامل)."""
+    """لوحة تحكم المشرف الرئيسية (أزرار رئيسية بعرض كامل وممركزة)."""
     keyboard = [
         [InlineKeyboardButton("🏛️  إدارة المناهج والمراحل والصفوف  🏛️", callback_data="adm_manage_curriculum")],
         [InlineKeyboardButton("📢  إذاعة للطلاب  📢", callback_data="admin_broadcast")],
