@@ -150,11 +150,11 @@ def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: i
         keyboard.append([InlineKeyboardButton(f"📖 {b['title']}", callback_data=f"adm_book_card_{b['id']}")])
         
     keyboard.append([InlineKeyboardButton("📤 رفع كتب جديدة لهذا الصف", callback_data=f"adm_upl_bk_{class_id}")])
+    keyboard.append([InlineKeyboardButton("✏️ تعديل اسم الصف", callback_data=f"adm_ren_cls_{class_id}")])
     keyboard.append([
-        InlineKeyboardButton("✏️ تعديل اسم الصف", callback_data=f"adm_ren_cls_{class_id}"),
-        InlineKeyboardButton("🗑️ تفريغ الكتب", callback_data=f"adm_del_all_bks_confirm_{class_id}")
+        InlineKeyboardButton("🗑️ حذف الكتب", callback_data=f"adm_del_all_bks_confirm_{class_id}"),
+        InlineKeyboardButton("🗑️ حذف هذا الصف بالكامل", callback_data=f"adm_del_cls_confirm_{class_id}")
     ])
-    keyboard.append([InlineKeyboardButton("🗑️ حذف هذا الصف بالكامل", callback_data=f"adm_del_cls_confirm_{class_id}")])
     keyboard.append([InlineKeyboardButton("↩️ قائمة الصفوف", callback_data=f"adm_view_cls_{stage_id}")])
     return InlineKeyboardMarkup(keyboard)
 
