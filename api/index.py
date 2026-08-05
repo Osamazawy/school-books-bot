@@ -52,37 +52,36 @@ async def ensure_bot_initialized():
         await bot_app.start()
         bot_initialized = True
 
+@app.get("/{full_path:path}")
 @app.get("/")
-@app.get("/api")
-@app.get("/api/index")
-@app.get("/api/index.py")
-async def root():
+async def handle_get_requests(request: Request, full_path: str = ""):
+    raw_path = str(request.url.path).lower()
+    
+    if "set_webhook" in raw_path or "set_webhook" in full_path.lower():
+        clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
+        if not clean_webhook_url:
+            return {"error": "WEBHOOK_URL environment variable is missing"}
+        
+        await ensure_bot_initialized()
+        target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
+        success = await bot_app.bot.set_webhook(url=target_url)
+        return {"success": success, "webhook_url": target_url}
+
     return {"status": "ok", "message": "Bot is active and running on Vercel Serverless!"}
 
-@app.get("/set_webhook")
-@app.get("/api/set_webhook")
-@app.get("/api/index.py/set_webhook")
-async def set_webhook():
-    clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
-    if not clean_webhook_url:
-        return {"error": "WEBHOOK_URL environment variable is missing"}
-    
-    await ensure_bot_initialized()
-    target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
-    success = await bot_app.bot.set_webhook(url=target_url)
-    return {"success": success, "webhook_url": target_url}
-
-@app.post("/webhook")
-@app.post("/api/webhook")
-@app.post("/api/index.py/webhook")
-async def webhook(request: Request):
-    try:
-        data = await request.json()
-        await ensure_bot_initialized()
-        update = Update.de_json(data, bot_app.bot)
-        await bot_app.process_update(update)
-        await asyncio.sleep(1.2)
-        return {"status": "ok"}
-    except Exception as e:
-        print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
-        return {"status": "error", "message": str(e)}
+@app.post("/{full_path:path}")
+@app.post("/")
+async def handle_post_requests(request: Request, full_path: str = ""):
+    raw_path = str(request.url.path).lower()
+    if "webhook" in raw_path or "webhook" in full_path.lower():
+        try:
+            data = await request.json()
+            await ensure_bot_initialized()
+            update = Update.de_json(data, bot_app.bot)
+            await bot_app.process_update(update)
+            await asyncio.sleep(1.2)
+            return {"status": "ok"}
+        except Exception as e:
+            print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
+            return {"status": "error", "message": str(e)}
+    return {"status": "ok"}
