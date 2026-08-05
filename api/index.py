@@ -3,6 +3,7 @@ import sys
 import asyncio
 import traceback
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from telegram import Update
 from telegram.ext import ApplicationBuilder, Defaults
 from telegram.constants import ParseMode
@@ -16,13 +17,24 @@ from handlers.search_handlers import get_search_handler
 from handlers.admin_handlers import register_admin_handlers
 
 app = FastAPI()
+
+@app.middleware("http")
+async def catch_exceptions_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        err = f"Unhandled Exception: {exc}\n{traceback.format_exc()}"
+        print(err, flush=True)
+        return JSONResponse(status_code=500, content={"error": str(exc), "traceback": traceback.format_exc()})
+
 bot_initialized = False
 
 def create_telegram_app():
     defaults = Defaults(parse_mode=ParseMode.HTML)
+    clean_token = BOT_TOKEN.strip().strip('"').strip("'")
     bot_app = (
         ApplicationBuilder()
-        .token(BOT_TOKEN)
+        .token(clean_token)
         .defaults(defaults)
         .build()
     )
@@ -44,18 +56,19 @@ async def ensure_bot_initialized():
 @app.get("/api")
 @app.get("/api/index")
 @app.get("/api/index.py")
-def root():
+async def root():
     return {"status": "ok", "message": "Bot is active and running on Vercel Serverless!"}
 
 @app.get("/set_webhook")
 @app.get("/api/set_webhook")
 @app.get("/api/index.py/set_webhook")
 async def set_webhook():
-    if not WEBHOOK_URL:
+    clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
+    if not clean_webhook_url:
         return {"error": "WEBHOOK_URL environment variable is missing"}
     
     await ensure_bot_initialized()
-    target_url = f"{WEBHOOK_URL.rstrip('/')}/api/webhook"
+    target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
     success = await bot_app.bot.set_webhook(url=target_url)
     return {"success": success, "webhook_url": target_url}
 
