@@ -19,9 +19,9 @@ def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], i
         classes = item["classes"]
         palette = STAGE_PALETTES[idx % len(STAGE_PALETTES)]
         
-        # عنوان المرحلة الرأسي بالمربعات الملونة
+        # عنوان المرحلة الرأسي بـ رمز واحد عن اليمين واليسار
         h_icon = palette["header_icon"]
-        header_text = f"{h_icon} {h_icon} {h_icon} {stage['name']} {h_icon} {h_icon} {h_icon}"
+        header_text = f"{h_icon} {stage['name']} {h_icon}"
         keyboard.append([InlineKeyboardButton(header_text, callback_data="info_noop")])
         
         # أزرار الصفوف بالمربعات الملونة بدون أرقام
