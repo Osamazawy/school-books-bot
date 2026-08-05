@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Any
-from database.connection import get_db_connection, IS_POSTGRES
+from database.connection import get_db_connection
 
 def _val(row, key_or_idx=0):
     """مساعد آمن لاستخراج القيمة من القاموس أو الصف الترتيبي."""
@@ -49,10 +49,7 @@ async def get_users_count() -> int:
 
 async def add_stage(name: str) -> Optional[int]:
     async with get_db_connection() as db:
-        if IS_POSTGRES:
-            await db.execute("INSERT INTO stages (name) VALUES (?) ON CONFLICT (name) DO NOTHING;", (name.strip(),))
-        else:
-            await db.execute("INSERT OR IGNORE INTO stages (name) VALUES (?);", (name.strip(),))
+        await db.execute("INSERT INTO stages (name) VALUES (?) ON CONFLICT (name) DO NOTHING;", (name.strip(),))
         await db.commit()
         async with db.execute("SELECT id FROM stages WHERE name = ?;", (name.strip(),)) as cursor:
             row = await cursor.fetchone()
@@ -96,10 +93,7 @@ async def get_stages_count() -> int:
 
 async def add_class(stage_id: int, name: str) -> Optional[int]:
     async with get_db_connection() as db:
-        if IS_POSTGRES:
-            await db.execute("INSERT INTO classes (stage_id, name) VALUES (?, ?);", (stage_id, name.strip()))
-        else:
-            await db.execute("INSERT OR IGNORE INTO classes (stage_id, name) VALUES (?, ?);", (stage_id, name.strip()))
+        await db.execute("INSERT INTO classes (stage_id, name) VALUES (?, ?) ON CONFLICT DO NOTHING;", (stage_id, name.strip()))
         await db.commit()
         async with db.execute("SELECT id FROM classes WHERE stage_id = ? AND name = ?;", (stage_id, name.strip())) as cursor:
             row = await cursor.fetchone()
@@ -149,21 +143,12 @@ async def get_classes_count() -> int:
 async def add_book_for_class(class_id: int, title: str, description: str, telegram_file_id: str, subject_id: Optional[int] = None) -> Optional[int]:
     """إضافة كتاب مباشرة لصف دراسي."""
     async with get_db_connection() as db:
-        if IS_POSTGRES:
-            cursor = await db.execute("""
-                INSERT INTO books (class_id, subject_id, title, description, telegram_file_id)
-                VALUES (?, ?, ?, ?, ?) RETURNING id;
-            """, (class_id, subject_id, title.strip(), description.strip() if description else "", telegram_file_id.strip()))
-            row = await cursor.fetchone()
-            await db.commit()
-            return _val(row, 'id')
-        else:
-            cursor = await db.execute("""
-                INSERT INTO books (class_id, subject_id, title, description, telegram_file_id)
-                VALUES (?, ?, ?, ?, ?);
-            """, (class_id, subject_id, title.strip(), description.strip() if description else "", telegram_file_id.strip()))
-            await db.commit()
-            return cursor.lastrowid
+        cursor = await db.execute("""
+            INSERT INTO books (class_id, subject_id, title, description, telegram_file_id)
+            VALUES (?, ?, ?, ?, ?);
+        """, (class_id, subject_id, title.strip(), description.strip() if description else "", telegram_file_id.strip()))
+        await db.commit()
+        return getattr(cursor, 'lastrowid', None)
 
 async def get_books_by_class(class_id: int) -> List[Dict[str, Any]]:
     """استرجاع جميع كتب صف محدد."""
@@ -190,17 +175,16 @@ async def get_book_by_id(book_id: int) -> Optional[Dict[str, Any]]:
             return _dict(row) if row else None
 
 async def search_books(query: str) -> List[Dict[str, Any]]:
-    """البحث السريع عن الكتب."""
+    """البحث السريع القياسي عن الكتب."""
     search_term = f"%{query.strip()}%"
-    like_op = "ILIKE" if IS_POSTGRES else "LIKE"
     async with get_db_connection() as db:
-        async with db.execute(f"""
+        async with db.execute("""
             SELECT b.id, b.title, b.description, b.telegram_file_id,
                    c.name as class_name, st.name as stage_name
             FROM books b
             JOIN classes c ON b.class_id = c.id
             JOIN stages st ON c.stage_id = st.id
-            WHERE b.title {like_op} ? OR b.description {like_op} ? OR c.name {like_op} ? OR st.name {like_op} ?
+            WHERE LOWER(b.title) LIKE LOWER(?) OR LOWER(b.description) LIKE LOWER(?) OR LOWER(c.name) LIKE LOWER(?) OR LOWER(st.name) LIKE LOWER(?)
             ORDER BY b.id DESC LIMIT 25;
         """, (search_term, search_term, search_term, search_term)) as cursor:
             rows = await cursor.fetchall()

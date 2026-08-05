@@ -105,15 +105,15 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
 
     if not books:
         await query.edit_message_text(
-            f"⚠️ لا توجد كتب مضافة لـ **{class_name}** حتى الآن.",
-            parse_mode="Markdown",
+            f"⚠️ لا توجد كتب مضافة لـ <b>{class_name}</b> حتى الآن.",
+            parse_mode="HTML",
             reply_markup=inline.get_books_keyboard([], stage_id)
         )
         return
 
     await query.edit_message_text(
-        f"📘 **كتب ومناهج: {class_name}**\nاختر الكتاب المطلوب لتحميله مباشرة:",
-        parse_mode="Markdown",
+        f"📘 <b>كتب ومناهج: {class_name}</b>\nاختر الكتاب المطلوب لتحميله مباشرة:",
+        parse_mode="HTML",
         reply_markup=inline.get_books_keyboard(books, stage_id)
     )
 

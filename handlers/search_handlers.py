@@ -67,10 +67,3 @@ def register_search_handlers(app):
     app.add_handler(CallbackQueryHandler(initiate_search, pattern="^user_search$"))
     app.add_handler(CommandHandler("search", process_search_query))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_search_query))
-
-def get_search_handler():
-    """تأمين التوافق مع الكود السابق."""
-    class SearchHandlerWrapper:
-        def __init__(self):
-            pass
-    return SearchHandlerWrapper()
