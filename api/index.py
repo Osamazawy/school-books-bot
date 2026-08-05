@@ -32,10 +32,12 @@ bot_app = create_telegram_app()
 
 @app.get("/")
 @app.get("/api")
+@app.get("/api/index.py")
 def root():
-    return {"status": "ok", "message": "Bot is running on Vercel"}
+    return {"status": "ok", "message": "Bot is running successfully on Vercel!"}
 
 @app.post("/api/webhook")
+@app.post("/api/index.py/webhook")
 async def process_webhook(request: Request):
     data = await request.json()
     async with bot_app:
@@ -44,6 +46,7 @@ async def process_webhook(request: Request):
     return {"status": "ok"}
 
 @app.get("/api/set_webhook")
+@app.get("/api/index.py/set_webhook")
 async def set_webhook():
     if not WEBHOOK_URL:
         return {"error": "WEBHOOK_URL environment variable is missing"}
