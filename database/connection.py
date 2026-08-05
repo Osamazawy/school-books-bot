@@ -143,7 +143,8 @@ async def init_db():
                     CREATE TABLE IF NOT EXISTS classes (
                         id SERIAL PRIMARY KEY,
                         stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
-                        name VARCHAR(255) NOT NULL
+                        name VARCHAR(255) NOT NULL,
+                        CONSTRAINT unique_stage_class UNIQUE (stage_id, name)
                     );
                     CREATE TABLE IF NOT EXISTS subjects (
                         id SERIAL PRIMARY KEY,
@@ -165,12 +166,16 @@ async def init_db():
                         full_name TEXT,
                         join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
+                    
+                    -- تنظيف الصفوف المكررة إن وجدت من المرات السابقة
+                    DELETE FROM classes a USING classes b WHERE a.id > b.id AND a.stage_id = b.stage_id AND a.name = b.name;
+
                     INSERT INTO stages (id, name) VALUES (1, 'المرحلة الابتدائية'), (2, 'المرحلة المتوسطة'), (3, 'المرحلة الإعدادية') ON CONFLICT (id) DO NOTHING;
                     INSERT INTO classes (stage_id, name) VALUES 
                         (1, 'الأول الابتدائي'), (1, 'الثاني الابتدائي'), (1, 'الثالث الابتدائي'), (1, 'الرابع الابتدائي'), (1, 'الخامس الابتدائي'), (1, 'السادس الابتدائي'),
                         (2, 'الأول المتوسط'), (2, 'الثاني المتوسط'), (2, 'الثالث المتوسط'),
                         (3, 'الرابع العلمي'), (3, 'الرابع الأدبي'), (3, 'الخامس العلمي'), (3, 'الخامس الأدبي'), (3, 'السادس العلمي'), (3, 'السادس الأدبي')
-                    ON CONFLICT DO NOTHING;
+                    ON CONFLICT (stage_id, name) DO NOTHING;
                 """)
                 conn.commit()
                 conn.close()
@@ -192,7 +197,8 @@ async def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     stage_id INTEGER NOT NULL,
                     name TEXT NOT NULL,
-                    FOREIGN KEY (stage_id) REFERENCES stages (id) ON DELETE CASCADE
+                    FOREIGN KEY (stage_id) REFERENCES stages (id) ON DELETE CASCADE,
+                    UNIQUE (stage_id, name)
                 );
             """)
             await db.execute("""
