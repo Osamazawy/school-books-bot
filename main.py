@@ -48,8 +48,8 @@ def main():
         .build()
     )
 
-    register_search_handlers(application)
     register_admin_handlers(application)
+    register_search_handlers(application)
     register_user_handlers(application)
 
     logger.info("البوت يعمل الآن بصورة ممتازة. (Press Ctrl+C to stop)")

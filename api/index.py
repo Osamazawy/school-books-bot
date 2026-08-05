@@ -12,6 +12,7 @@ from telegram.constants import ParseMode
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import BOT_TOKEN, WEBHOOK_URL
+from database.connection import init_db
 from handlers.user_handlers import register_user_handlers
 from handlers.search_handlers import register_search_handlers
 from handlers.admin_handlers import register_admin_handlers
@@ -38,8 +39,8 @@ def create_telegram_app():
         .defaults(defaults)
         .build()
     )
-    register_search_handlers(bot_app)
     register_admin_handlers(bot_app)
+    register_search_handlers(bot_app)
     register_user_handlers(bot_app)
     return bot_app
 
@@ -48,6 +49,10 @@ bot_app = create_telegram_app()
 async def ensure_bot_initialized():
     global bot_initialized
     if not bot_initialized:
+        try:
+            await init_db()
+        except Exception as e:
+            print(f"Error initializing DB in serverless: {e}", flush=True)
         await bot_app.initialize()
         await bot_app.start()
         bot_initialized = True

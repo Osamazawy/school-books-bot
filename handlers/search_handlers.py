@@ -34,6 +34,9 @@ async def initiate_search(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def process_search_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """معالجة النص المرسل من المستخدم والبحث في قاعدة البيانات مباشرة."""
+    if context.user_data.get('admin_action'):
+        return
+
     text = update.message.text.strip() if update.message and update.message.text else ""
     if text.startswith("/search"):
         text = text.replace("/search", "", 1).strip()
