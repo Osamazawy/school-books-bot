@@ -1,88 +1,78 @@
 from contextlib import asynccontextmanager
 import os
 import re
-import traceback
+import asyncio
 from config import DB_PATH, DATABASE_URL
 from utils.logger import logger
 
 IS_POSTGRES = bool(DATABASE_URL and ("postgres://" in DATABASE_URL or "postgresql://" in DATABASE_URL))
 
 if IS_POSTGRES:
-    import asyncpg
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
 else:
     import aiosqlite
 
 
 def get_formatted_db_url(url: str) -> str:
-    """تنسيق رابط قاعدة البيانات لـ asyncpg."""
+    """تنسيق رابط قاعدة البيانات لـ psycopg2."""
     formatted = url.replace("postgres://", "postgresql://", 1)
-    # إزالة sslmode إذا كانت غير متوافقة مع asyncpg وتمرير ssl بدلاً منها
-    formatted = re.sub(r"[?&]sslmode=[^&]+", "", formatted)
+    if "sslmode" not in formatted:
+        separator = "&" if "?" in formatted else "?"
+        formatted = f"{formatted}{separator}sslmode=require"
     return formatted
 
 
-def convert_params(sql: str) -> str:
-    """تحويل علامات الاستفهام ? إلى $1, $2 في PostgreSQL asyncpg."""
-    pg_sql = re.sub(r"INSERT\s+OR\s+IGNORE\s+INTO", "INSERT INTO", sql, flags=re.IGNORECASE)
-    if "INSERT INTO" in pg_sql.upper() and "ON CONFLICT" not in pg_sql.upper() and "IGNORE" in sql.upper():
-        pg_sql = pg_sql.rstrip(";") + " ON CONFLICT DO NOTHING;"
-
-    count = [0]
-    def repl(match):
-        count[0] += 1
-        return f"${count[0]}"
-    
-    return re.sub(r"\?", repl, pg_sql)
-
-
-class AsyncPGDBWrapper:
-    """مغلف متوافق مع aiosqlite يغلف asyncpg لسرعة واستقرار Vercel."""
+class SyncToAsyncPostgresWrapper:
+    """مغلف تزامني متوافق لـ psycopg2 ويعمل مع asyncio لسيرفرات Vercel."""
 
     def __init__(self, conn):
         self.conn = conn
 
     async def execute(self, sql: str, params: tuple = ()):
-        pg_sql = convert_params(sql)
-        if pg_sql.strip().upper().startswith("SELECT") or "RETURNING" in pg_sql.upper():
-            rows = await self.conn.fetch(pg_sql, *params)
-            return AsyncPGCursorWrapper(rows)
-        else:
-            status = await self.conn.execute(pg_sql, *params)
-            return AsyncPGCursorWrapper([], status=status)
+        pg_sql = sql.replace("?", "%s")
+        pg_sql = re.sub(r"INSERT\s+OR\s+IGNORE\s+INTO", "INSERT INTO", pg_sql, flags=re.IGNORECASE)
+        if "INSERT INTO" in pg_sql.upper() and "ON CONFLICT" not in pg_sql.upper() and "IGNORE" in sql.upper():
+            pg_sql = pg_sql.rstrip(";") + " ON CONFLICT DO NOTHING;"
+
+        def _run():
+            cur = self.conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute(pg_sql, params)
+            return cur
+
+        cursor = await asyncio.to_thread(_run)
+        return SyncCursorWrapper(cursor)
 
     async def commit(self):
-        pass  # asyncpg يقوم بالتنفيذ المباشر التلقائي بدون حاجة لـ commit يدوي
+        await asyncio.to_thread(self.conn.commit)
 
     async def close(self):
-        await self.conn.close()
+        await asyncio.to_thread(self.conn.close)
 
 
-class AsyncPGCursorWrapper:
-    def __init__(self, rows, status=None):
-        self.rows = [dict(row) for row in rows] if rows else []
-        self.status = status
-        self._index = 0
+class SyncCursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
 
     @property
     def rowcount(self):
-        if self.status:
-            match = re.search(r"\d+", self.status)
-            return int(match.group()) if match else 1
-        return len(self.rows)
+        return getattr(self.cursor, 'rowcount', -1)
 
     @property
     def lastrowid(self):
-        if self.rows and 'id' in self.rows[0]:
-            return self.rows[0]['id']
+        try:
+            row = self.cursor.fetchone()
+            if row:
+                return row.get('id', row[0] if isinstance(row, (tuple, list)) else None)
+        except Exception:
+            pass
         return None
 
     async def fetchone(self):
-        if self.rows:
-            return self.rows[0]
-        return None
+        return await asyncio.to_thread(self.cursor.fetchone)
 
     async def fetchall(self):
-        return self.rows
+        return await asyncio.to_thread(self.cursor.fetchall)
 
     async def __aenter__(self):
         return self
@@ -92,47 +82,52 @@ class AsyncPGCursorWrapper:
 
 
 async def init_db():
-    """إعادة تهيئة وفحص جداول قاعدة البيانات."""
+    """إعادة تهيئة وفحص جداول قاعدة البيانات عند التشغيل الأول."""
     logger.info("جاري فحص وإعداد قاعدة البيانات...")
 
     if IS_POSTGRES:
         db_url = get_formatted_db_url(DATABASE_URL)
         try:
-            conn = await asyncpg.connect(db_url, ssl="require")
-            await conn.execute("""
-                CREATE TABLE IF NOT EXISTS stages (
-                    id SERIAL PRIMARY KEY,
-                    name VARCHAR(255) NOT NULL UNIQUE
-                );
-                CREATE TABLE IF NOT EXISTS classes (
-                    id SERIAL PRIMARY KEY,
-                    stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
-                    name VARCHAR(255) NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS subjects (
-                    id SERIAL PRIMARY KEY,
-                    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-                    name VARCHAR(255) NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS books (
-                    id SERIAL PRIMARY KEY,
-                    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-                    subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
-                    title VARCHAR(255) NOT NULL,
-                    description TEXT,
-                    telegram_file_id TEXT NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-                CREATE TABLE IF NOT EXISTS users (
-                    id SERIAL PRIMARY KEY,
-                    telegram_id BIGINT UNIQUE NOT NULL,
-                    full_name TEXT,
-                    join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-                );
-            """)
-            await conn.close()
+            def _init_pg():
+                conn = psycopg2.connect(db_url)
+                cur = conn.cursor()
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS stages (
+                        id SERIAL PRIMARY KEY,
+                        name VARCHAR(255) NOT NULL UNIQUE
+                    );
+                    CREATE TABLE IF NOT EXISTS classes (
+                        id SERIAL PRIMARY KEY,
+                        stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
+                        name VARCHAR(255) NOT NULL
+                    );
+                    CREATE TABLE IF NOT EXISTS subjects (
+                        id SERIAL PRIMARY KEY,
+                        class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+                        name VARCHAR(255) NOT NULL
+                    );
+                    CREATE TABLE IF NOT EXISTS books (
+                        id SERIAL PRIMARY KEY,
+                        class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+                        subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
+                        title VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        telegram_file_id TEXT NOT NULL,
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                    CREATE TABLE IF NOT EXISTS users (
+                        id SERIAL PRIMARY KEY,
+                        telegram_id BIGINT UNIQUE NOT NULL,
+                        full_name TEXT,
+                        join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+                conn.commit()
+                conn.close()
+
+            await asyncio.to_thread(_init_pg)
         except Exception as e:
-            logger.error(f"خطأ الاتصال بـ Supabase (asyncpg): {e}")
+            logger.error(f"خطأ أثناء الاتصال بـ Supabase PostgreSQL: {e}")
     else:
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute("PRAGMA foreign_keys = ON;")
@@ -186,15 +181,15 @@ async def init_db():
 
 @asynccontextmanager
 async def get_db_connection():
-    """مزود الاتصال بقاعدة البيانات لـ Vercel عبر asyncpg."""
+    """مزود الاتصال بقاعدة البيانات لـ Vercel عبر psycopg2-binary المضمونة."""
     if IS_POSTGRES:
         db_url = get_formatted_db_url(DATABASE_URL)
-        conn = await asyncpg.connect(db_url, ssl="require")
-        wrapper = AsyncPGDBWrapper(conn)
+        conn = await asyncio.to_thread(psycopg2.connect, db_url)
+        wrapper = SyncToAsyncPostgresWrapper(conn)
         try:
             yield wrapper
         finally:
-            await conn.close()
+            await asyncio.to_thread(conn.close)
     else:
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
