@@ -553,7 +553,7 @@ async def confirm_delete_all_class_books(update: Update, context: ContextTypes.D
     books = await repository.get_books_by_class(class_id)
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⚠️ نعم، تفريغ وحذف كافة الكتب الآن", callback_data=f"adm_del_all_bks_exec_{class_id}")],
-        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_class_card_{class_id}")]
+        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_bks_{class_id}")]
     ])
     await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف وتفريغ جميع الكتب ({len(books)} كتاب) التابعة لصف: {cls['name'] if cls else ''}؟</b>", reply_markup=keyboard)
 
@@ -571,7 +571,8 @@ async def exec_delete_all_class_books(update: Update, context: ContextTypes.DEFA
     cls = await repository.get_class_by_id(class_id)
     stage_id = cls['stage_id'] if cls else 1
     count = await repository.delete_all_books_by_class(class_id)
-    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_card_keyboard(class_id, stage_id))
+    books = await repository.get_books_by_class(class_id)
+    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_books_list_keyboard(books, class_id, stage_id))
 
 
 def register_admin_handlers(app):
@@ -581,8 +582,8 @@ def register_admin_handlers(app):
     app.add_handler(CallbackQueryHandler(admin_manage_curriculum, pattern="^adm_manage_curriculum$"))
 
     # التنقل المباشر والسريع
-    app.add_handler(CallbackQueryHandler(view_classes_list, pattern="^adm_(stage_card|view_cls)_\\d+$"))
-    app.add_handler(CallbackQueryHandler(view_class_books, pattern="^adm_(class_card|view_bks)_\\d+$"))
+    app.add_handler(CallbackQueryHandler(view_classes_list, pattern="^adm_view_cls_\\d+$"))
+    app.add_handler(CallbackQueryHandler(view_class_books, pattern="^adm_view_bks_\\d+$"))
     app.add_handler(CallbackQueryHandler(view_single_book_card, pattern="^adm_book_card_\\d+$"))
 
     # الحذف المباشر
