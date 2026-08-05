@@ -2,31 +2,16 @@ from typing import List, Dict, Any
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 STAGE_PALETTES = [
-    {"header_icon": "🟢", "btn_icon": "🟢"},
-    {"header_icon": "🟡", "btn_icon": "🟡"},
-    {"header_icon": "🔴", "btn_icon": "🔴"},
-    {"header_icon": "🟣", "btn_icon": "🟣"},
-    {"header_icon": "🔵", "btn_icon": "🔵"},
+    {"header_icon": "🟩", "btn_icon": "🟩"},
+    {"header_icon": "🟨", "btn_icon": "🟨"},
+    {"header_icon": "🟥", "btn_icon": "🟥"},
+    {"header_icon": "🟪", "btn_icon": "🟪"},
+    {"header_icon": "🟦", "btn_icon": "🟦"},
 ]
-
-def get_class_num_icon(class_name: str) -> str:
-    if "الأول" in class_name or "1" in class_name:
-        return "1️⃣ "
-    if "الثاني" in class_name or "2" in class_name:
-        return "2️⃣ "
-    if "الثالث" in class_name or "3" in class_name:
-        return "3️⃣ "
-    if "الرابع" in class_name or "4" in class_name:
-        return "4️⃣ "
-    if "الخامس" in class_name or "5" in class_name:
-        return "5️⃣ "
-    if "السادس" in class_name or "6" in class_name:
-        return "6️⃣ "
-    return ""
 
 
 def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], is_admin: bool = False) -> InlineKeyboardMarkup:
-    """عرض الشاشة الموحدة للمراحل والصفوف بألوان مخصصة لكل مرحلة وجذب بصري 2026."""
+    """عرض الشاشة الموحدة للمراحل والصفوف بمربعات ملونة مخصصة لكل مرحلة."""
     keyboard = []
     
     for idx, item in enumerate(stages_with_classes):
@@ -34,16 +19,15 @@ def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], i
         classes = item["classes"]
         palette = STAGE_PALETTES[idx % len(STAGE_PALETTES)]
         
-        # عنوان المرحلة الرأسي الفاخر
+        # عنوان المرحلة الرأسي بالمربعات الملونة
         h_icon = palette["header_icon"]
         header_text = f"{h_icon} {h_icon} {h_icon} {stage['name']} {h_icon} {h_icon} {h_icon}"
         keyboard.append([InlineKeyboardButton(header_text, callback_data="info_noop")])
         
-        # أزرار الصفوف التابعة للمرحلة
+        # أزرار الصفوف بالمربعات الملونة بدون أرقام
         row = []
         for cls in classes:
-            num_icon = get_class_num_icon(cls['name'])
-            btn_text = f"{palette['btn_icon']} {num_icon}{cls['name']}".strip()
+            btn_text = f"{palette['btn_icon']} {cls['name']}".strip()
             btn = InlineKeyboardButton(btn_text, callback_data=f"user_class_{cls['id']}")
             row.append(btn)
             if len(row) == 2:
