@@ -15,8 +15,19 @@ else:
 
 
 def get_formatted_db_url(url: str) -> str:
-    """تنسيق رابط قاعدة البيانات لـ psycopg2."""
+    """تنسيق رابط قاعدة البيانات لـ psycopg2 وتصحيح روابط Supabase Direct إلى IPv4 Pooler."""
     formatted = url.replace("postgres://", "postgresql://", 1)
+    
+    # تحويل رابط Direct Connection (IPv6 فقط) إلى Connection Pooler (IPv4 متوافق مع Vercel)
+    if ".supabase.co" in formatted and "pooler.supabase.com" not in formatted:
+        # استخراج reference من db.xxx.supabase.co
+        match = re.search(r"@db\.([a-z0-9]+)\.supabase\.co", formatted)
+        if match:
+            ref = match.group(1)
+            # تحديث اسم المستخدم والرابط لاستخدام IPv4 Pooler
+            formatted = re.sub(r"postgresql://postgres:", f"postgresql://postgres.{ref}:", formatted)
+            formatted = re.sub(r"@db\.[a-z0-9]+\.supabase\.co:5432", r"@aws-0-eu-central-1.pooler.supabase.com:5432", formatted)
+    
     if "sslmode" not in formatted:
         separator = "&" if "?" in formatted else "?"
         formatted = f"{formatted}{separator}sslmode=require"
