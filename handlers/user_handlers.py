@@ -11,10 +11,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     is_admin = user.id in ADMIN_IDS
-    welcome_text = (
-        f"مرحباً بك يا <b>{user.first_name}</b> في بوت المناهج والكتب الدراسية 📚✨\n\n"
-        "اختر <b>المراحل الدراسية</b> للتنقل بين الصفوف وتحميل المناهج بصيغة PDF فوراً."
-    )
+    welcome_text = f"مرحباً بك يا <b>{user.first_name}</b> في بوت الكتب الدراسية 📚✨"
     
     if update.message:
         await update.message.reply_text(
@@ -42,7 +39,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     is_admin = user.id in ADMIN_IDS if user else False
     
     await query.edit_message_text(
-        "📚 <b>القائمة الرئيسية</b>\nيرجى اختيار القسم المطلوب من الأزرار أدناه:",
+        "📚 <b>القائمة الرئيسية</b>",
         parse_mode="HTML",
         reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
     )
@@ -56,13 +53,13 @@ async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         user = update.effective_user
         is_admin = user.id in ADMIN_IDS if user else False
         await query.edit_message_text(
-            "⚠️ لا توجد مراحل دراسية مضافة حالياً في قاعدة البيانات.",
+            "⚠️ لا توجد مراحل مضافة.",
             reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
         )
         return
 
     await query.edit_message_text(
-        "🏛️ <b>المراحل الدراسية</b>\nاختر المرحلة الدراسية لعرض صفوفها المتاحة:",
+        "🏛️ <b>المراحل الدراسية</b>",
         parse_mode="HTML",
         reply_markup=inline.get_stages_keyboard(stages)
     )
@@ -79,14 +76,14 @@ async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if not classes:
         await query.edit_message_text(
-            f"⚠️ لا توجد صفوف مضافة لمرحلة <b>{stage_name}</b> حتى الآن.",
+            f"⚠️ لا توجد صفوف مضافة لـ <b>{stage_name}</b>.",
             parse_mode="HTML",
             reply_markup=inline.get_classes_keyboard([], stage_id)
         )
         return
 
     await query.edit_message_text(
-        f"🎓 <b>صفوف مرحلة: {stage_name}</b>\nاختر الصف الدراسي لعرض كتبه ومناهجه:",
+        f"🎓 <b>صفوف {stage_name}</b>",
         parse_mode="HTML",
         reply_markup=inline.get_classes_keyboard(classes, stage_id)
     )
@@ -105,14 +102,14 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
 
     if not books:
         await query.edit_message_text(
-            f"⚠️ لا توجد كتب مضافة لـ <b>{class_name}</b> حتى الآن.",
+            f"⚠️ لا توجد كتب مضافة لـ <b>{class_name}</b>.",
             parse_mode="HTML",
             reply_markup=inline.get_books_keyboard([], stage_id)
         )
         return
 
     await query.edit_message_text(
-        f"📘 <b>كتب ومناهج: {class_name}</b>\nاختر الكتاب المطلوب لتحميله مباشرة:",
+        f"📘 <b>كتب {class_name}</b>",
         parse_mode="HTML",
         reply_markup=inline.get_books_keyboard(books, stage_id)
     )
@@ -129,10 +126,8 @@ async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
 
     caption = (
-        f"📘 <b>{book['title']}</b>\n\n"
-        f"🏛️ <b>المرحلة:</b> {book['stage_name']}\n"
-        f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
-        "اضغط على الزر أدناه لإرسال ملف الـ PDF فوراً:"
+        f"📘 <b>{book['title']}</b>\n"
+        f"🏛️ {book['stage_name']} - 🎓 {book['class_name']}"
     )
     
     await query.edit_message_text(

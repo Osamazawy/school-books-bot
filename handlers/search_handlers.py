@@ -13,11 +13,7 @@ from utils.logger import logger
 async def initiate_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """بدء عملية البحث وطلب كلمة البحث من المستخدم."""
     query = update.callback_query
-    prompt = (
-        "🔍 <b>البحث السريع عن الكتب والمناهج</b>\n\n"
-        "أرسل اسم الكتاب أو المادة أو المرحلة مباشرة في رسالة (مثال: <i>الرياضيات</i> أو <i>الأول المتوسط</i>).\n\n"
-        "أو اكتب الأمر: <code>/search اسم_الكتاب</code>"
-    )
+    prompt = "🔍 <b>أرسل اسم الكتاب أو المادة للبحث:</b>"
     if query:
         await query.answer()
         await query.edit_message_text(
@@ -42,7 +38,7 @@ async def process_search_query(update: Update, context: ContextTypes.DEFAULT_TYP
         text = text.replace("/search", "", 1).strip()
     
     if not text:
-        await update.message.reply_text("⚠️ يرجى إدخال اسم الكتاب أو المادة للبحث.")
+        await update.message.reply_text("⚠️ أرسل كلمة للبحث.")
         return
 
     logger.info(f"المستخدم {update.effective_user.id} يدير بحثاً عن: '{text}'")
@@ -50,13 +46,13 @@ async def process_search_query(update: Update, context: ContextTypes.DEFAULT_TYP
 
     if not results:
         await update.message.reply_text(
-            f"❌ لم يتم العثور على نتائج تطابق: <b>{text}</b>\n\nحاول البحث باسم آخر أو اختر من المراحل الدراسية.",
+            f"❌ لا توجد نتائج لـ: <b>{text}</b>",
             parse_mode="HTML",
             reply_markup=inline.get_search_results_keyboard([])
         )
         return
 
-    result_text = f"🔎 <b>نتائج البحث عن:</b> <code>{text}</code>\nتم العثور على {len(results)} نتيجة:"
+    result_text = f"🔎 <b>نتائج البحث عن: {text}</b>"
     await update.message.reply_text(
         result_text,
         parse_mode="HTML",
