@@ -67,6 +67,16 @@ async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         reply_markup=inline.get_stages_keyboard(stages)
     )
 
+async def run_minimal_countdown(query, final_text: str, reply_markup=None) -> None:
+    """عرض عداد تنازلي بالأرقام فقط (3️⃣ 2️⃣ 1️⃣) بسلاسة فائقة قبل فتح القسم."""
+    for num in ["3️⃣", "2️⃣", "1️⃣"]:
+        try:
+            await query.edit_message_text(f"⏳ <b>{num}</b>", parse_mode="HTML")
+            await asyncio.sleep(0.7)
+        except Exception:
+            break
+    await query.edit_message_text(final_text, parse_mode="HTML", reply_markup=reply_markup)
+
 async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
@@ -85,14 +95,11 @@ async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         )
         return
 
-    await query.edit_message_text(
-        f"🎓 <b>صفوف مرحلة: {stage_name}</b>\nاختر الصف الدراسي لعرض كتبه ومناهجه:",
-        parse_mode="HTML",
-        reply_markup=inline.get_classes_keyboard(classes, stage_id)
-    )
+    final_text = f"🎓 <b>صفوف مرحلة: {stage_name}</b>\nاختر الصف الدراسي لعرض كتبه ومناهجه:"
+    await run_minimal_countdown(query, final_text, inline.get_classes_keyboard(classes, stage_id))
 
 async def list_books_for_class_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """عرض الكتب التابعة للصف مباشرة عند الاختيار."""
+    """عرض الكتب التابعة للصف مباشرة عند الاختيار مع عداد تنازلي بالأرقام."""
     query = update.callback_query
     await query.answer()
     
@@ -111,11 +118,8 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
         )
         return
 
-    await query.edit_message_text(
-        f"📘 <b>كتب ومناهج: {class_name}</b>\nاختر الكتاب المطلوب لتحميله مباشرة:",
-        parse_mode="HTML",
-        reply_markup=inline.get_books_keyboard(books, stage_id)
-    )
+    final_text = f"📘 <b>كتب ومناهج: {class_name}</b>\nاختر الكتاب المطلوب لتحميله مباشرة:"
+    await run_minimal_countdown(query, final_text, inline.get_books_keyboard(books, stage_id))
 
 async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -135,11 +139,7 @@ async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         "اضغط على الزر أدناه لإرسال ملف الـ PDF فوراً:"
     )
     
-    await query.edit_message_text(
-        caption,
-        parse_mode="HTML",
-        reply_markup=inline.get_book_details_keyboard(book_id, book['class_id'])
-    )
+    await run_minimal_countdown(query, caption, inline.get_book_details_keyboard(book_id, book['class_id']))
 
 async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
