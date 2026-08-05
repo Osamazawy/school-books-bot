@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 from config import LOG_LEVEL
 
@@ -12,12 +13,20 @@ def setup_logger():
             pass
 
     handler_stdout = logging.StreamHandler(sys.stdout)
-    handler_file = logging.FileHandler("bot.log", encoding="utf-8")
+
+    handlers = [handler_stdout]
+    # إضافة ملف bot.log فقط إذا كان النظام يدعم الكتابة (ليس Vercel)
+    if not os.getenv("VERCEL"):
+        try:
+            handler_file = logging.FileHandler("bot.log", encoding="utf-8")
+            handlers.append(handler_file)
+        except OSError:
+            pass
 
     logging.basicConfig(
         level=getattr(logging, LOG_LEVEL.upper(), logging.INFO),
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        handlers=[handler_stdout, handler_file]
+        handlers=handlers
     )
     
     # تقليل الضجيج من مكتبات httpx و telegram
