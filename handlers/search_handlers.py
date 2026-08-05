@@ -13,7 +13,11 @@ from utils.logger import logger
 async def initiate_search(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """بدء عملية البحث وطلب كلمة البحث من المستخدم."""
     query = update.callback_query
-    prompt = "🔍 <b>أرسل اسم الكتاب أو المادة للبحث مباشرة:</b>"
+    prompt = (
+        "🔍 <b>البحث السريع عن الكتب والمناهج</b>\n\n"
+        "أرسل اسم الكتاب أو المادة أو المرحلة مباشرة في رسالة (مثال: <i>الرياضيات</i> أو <i>الأول المتوسط</i>).\n\n"
+        "أو اكتب الأمر: <code>/search اسم_الكتاب</code>"
+    )
     if query:
         await query.answer()
         await query.edit_message_text(

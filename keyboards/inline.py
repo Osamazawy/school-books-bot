@@ -13,33 +13,43 @@ def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
 
 
 def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض عناصر المراحل للمستخدم بعمودين محاذيين لليمين RTL، والأزرار الرئيسية بعرض كامل."""
+    """عرض عناصر المراحل للمستخدم: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
     keyboard = []
+    use_grid = len(stages) >= 4
     row = []
     for stage in stages:
-        row.append(InlineKeyboardButton(f"🏛️ {stage['name']}", callback_data=f"user_stage_{stage['id']}"))
-        if len(row) == 2:
-            keyboard.append(row[::-1])
-            row = []
-    if row:
+        btn = InlineKeyboardButton(f"🏛️ {stage['name']}", callback_data=f"user_stage_{stage['id']}")
+        if use_grid:
+            row.append(btn)
+            if len(row) == 2:
+                keyboard.append(row[::-1])
+                row = []
+        else:
+            keyboard.append([btn])
+    if use_grid and row:
         keyboard.append(row[::-1])
-        
+
     keyboard.append([InlineKeyboardButton("🏠  القائمة الرئيسية  🏠", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
 
 
 def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض عناصر الصفوف للمستخدم بعمودين محاذيين لليمين RTL، والأزرار الرئيسية بعرض كامل."""
+    """عرض عناصر الصفوف للمستخدم: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
     keyboard = []
+    use_grid = len(classes) >= 4
     row = []
     for cls in classes:
-        row.append(InlineKeyboardButton(f"🎓 {cls['name']}", callback_data=f"user_class_{cls['id']}"))
-        if len(row) == 2:
-            keyboard.append(row[::-1])
-            row = []
-    if row:
+        btn = InlineKeyboardButton(f"🎓 {cls['name']}", callback_data=f"user_class_{cls['id']}")
+        if use_grid:
+            row.append(btn)
+            if len(row) == 2:
+                keyboard.append(row[::-1])
+                row = []
+        else:
+            keyboard.append([btn])
+    if use_grid and row:
         keyboard.append(row[::-1])
-        
+
     keyboard.append([InlineKeyboardButton("🔙  العودة للمراحل  🔙", callback_data="user_stages")])
     return InlineKeyboardMarkup(keyboard)
 
@@ -87,15 +97,20 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض عناصر المراحل للآدمن بعمودين محاذيين لليمين RTL، والأزرار الرئيسية ممركزة بعرض كامل."""
+    """عرض عناصر المراحل للآدمن: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
     keyboard = []
+    use_grid = len(stages) >= 4
     row = []
     for s in stages:
-        row.append(InlineKeyboardButton(f"🏛️ {s['name']}", callback_data=f"adm_view_cls_{s['id']}"))
-        if len(row) == 2:
-            keyboard.append(row[::-1])
-            row = []
-    if row:
+        btn = InlineKeyboardButton(f"🏛️ {s['name']}", callback_data=f"adm_view_cls_{s['id']}")
+        if use_grid:
+            row.append(btn)
+            if len(row) == 2:
+                keyboard.append(row[::-1])
+                row = []
+        else:
+            keyboard.append([btn])
+    if use_grid and row:
         keyboard.append(row[::-1])
     keyboard.append([InlineKeyboardButton("➕  إضافة مرحلة جديدة  ➕", callback_data="adm_add_stage_new")])
     keyboard.append([InlineKeyboardButton("🔙  لوحة التحكم  🔙", callback_data="admin_panel")])
@@ -103,17 +118,22 @@ def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboa
 
 
 def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض عناصر الصفوف للآدمن بعمودين محاذيين لليمين RTL، والأزرار الرئيسية ممركزة بعرض كامل."""
+    """عرض عناصر الصفوف للآدمن: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
     keyboard = []
+    use_grid = len(classes) >= 4
     row = []
     for c in classes:
-        row.append(InlineKeyboardButton(f"🎓 {c['name']}", callback_data=f"adm_view_bks_{c['id']}"))
-        if len(row) == 2:
-            keyboard.append(row[::-1])
-            row = []
-    if row:
+        btn = InlineKeyboardButton(f"🎓 {c['name']}", callback_data=f"adm_view_bks_{c['id']}")
+        if use_grid:
+            row.append(btn)
+            if len(row) == 2:
+                keyboard.append(row[::-1])
+                row = []
+        else:
+            keyboard.append([btn])
+    if use_grid and row:
         keyboard.append(row[::-1])
-        
+
     keyboard.append([InlineKeyboardButton("➕  إضافة صف جديد  ➕", callback_data=f"adm_add_cls_batch_{stage_id}")])
     keyboard.append([
         InlineKeyboardButton("🗑️ حذف المرحلة", callback_data=f"adm_del_stg_confirm_{stage_id}"),

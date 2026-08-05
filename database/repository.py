@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any, Optional
 from database.connection import get_db_connection
 
 def _val(row, key_or_idx=0):
@@ -140,13 +140,13 @@ async def get_classes_count() -> int:
 
 # ==================== الكتب (Books) ====================
 
-async def add_book_for_class(class_id: int, title: str, description: str, telegram_file_id: str, subject_id: Optional[int] = None) -> Optional[int]:
+async def add_book_for_class(class_id: int, title: str, description: str, telegram_file_id: str) -> Optional[int]:
     """إضافة كتاب مباشرة لصف دراسي."""
     async with get_db_connection() as db:
         cursor = await db.execute("""
-            INSERT INTO books (class_id, subject_id, title, description, telegram_file_id)
-            VALUES (?, ?, ?, ?, ?);
-        """, (class_id, subject_id, title.strip(), description.strip() if description else "", telegram_file_id.strip()))
+            INSERT INTO books (class_id, title, description, telegram_file_id)
+            VALUES (?, ?, ?, ?);
+        """, (class_id, title.strip(), description.strip() if description else "", telegram_file_id.strip()))
         await db.commit()
         return getattr(cursor, 'lastrowid', None)
 

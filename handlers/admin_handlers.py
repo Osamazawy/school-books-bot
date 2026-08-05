@@ -177,11 +177,11 @@ async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_
 
     try:
         stages = await repository.get_all_stages()
-        text = "🏛️ <b>المراحل الدراسية</b>"
+        text = "🏛️ <b>إدارة المراحل والصفوف والمناهج</b>\nاختر المرحلة الدراسية للتنقل المباشر:"
         reply_markup = inline.get_admin_stages_list_keyboard(stages)
     except Exception as e:
         logger.error(f"خطأ جلب المراحل: {e}")
-        text = f"❌ <b>حدث خطأ:</b>\n<code>{e}</code>"
+        text = f"❌ <b>حدث خطأ أثناء جلب المراحل:</b>\n<code>{e}</code>"
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")]])
 
     await safe_edit_message(query, text, reply_markup=reply_markup)
@@ -197,7 +197,7 @@ async def start_add_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         except Exception:
             pass
     context.user_data['admin_action'] = 'add_stage'
-    await safe_edit_message(query, "➕ <b>أرسل اسم المرحلة الجديدة:</b>")
+    await safe_edit_message(query, "➕ <b>إضافة مرحلة جديدة</b>\nأرسل اسم المرحلة الجديدة في رسالة (مثال: المرحلة الثانوية):")
 
 
 async def start_rename_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -212,7 +212,7 @@ async def start_rename_stage(update: Update, context: ContextTypes.DEFAULT_TYPE)
     stage_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'rename_stage_{stage_id}'
     stage = await repository.get_stage_by_id(stage_id)
-    await safe_edit_message(query, f"✏️ <b>أرسل الاسم الجديد لمرحلة ({stage['name'] if stage else ''}):</b>")
+    await safe_edit_message(query, f"✏️ <b>تعديل اسم المرحلة</b>\nالاسم الحالي: <b>{stage['name'] if stage else ''}</b>\n\nأرسل الاسم الجديد:")
 
 
 async def confirm_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -230,7 +230,7 @@ async def confirm_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYP
         [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف النهائي", callback_data=f"adm_del_stg_exec_{stage_id}")],
         [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_cls_{stage_id}")]
     ])
-    await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف مرحلة: {stage['name'] if stage else ''}؟</b>", reply_markup=keyboard)
+    await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف مرحلة: {stage['name'] if stage else ''}؟</b>\nسيتم حذف كافة الصفوف والكتب التابعة لها أيضاً!", reply_markup=keyboard)
 
 
 async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -244,7 +244,7 @@ async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             pass
     stage_id = int(query.data.split("_")[-1])
     await repository.delete_stage(stage_id)
-    await safe_edit_message(query, "✅ تم حذف المرحلة بنجاح.", reply_markup=inline.get_admin_main_keyboard())
+    await safe_edit_message(query, "✅ تم حذف المرحلة وكافة محتوياتها بنجاح.", reply_markup=inline.get_admin_main_keyboard())
 
 
 # ==================== 2. المستوى الثاني: إدارة الصفوف والكتب المباشرة ====================
@@ -261,7 +261,7 @@ async def view_classes_list(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     stage_id = int(query.data.split("_")[-1])
     stage = await repository.get_stage_by_id(stage_id)
     classes = await repository.get_classes_by_stage(stage_id)
-    await safe_edit_message(query, f"🎓 <b>صفوف {stage['name'] if stage else ''}</b>", reply_markup=inline.get_admin_classes_list_keyboard(classes, stage_id))
+    await safe_edit_message(query, f"🎓 <b>صفوف مرحلة: {stage['name'] if stage else ''}</b>\nاختر الصف لتصفح وإدارة كتبه مباشرة:", reply_markup=inline.get_admin_classes_list_keyboard(classes, stage_id))
 
 
 async def start_add_class_batch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -276,7 +276,7 @@ async def start_add_class_batch(update: Update, context: ContextTypes.DEFAULT_TY
     stage_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'add_class_{stage_id}'
     stage = await repository.get_stage_by_id(stage_id)
-    await safe_edit_message(query, f"➕ <b>أرسل اسم الصف الجديد لمرحلة ({stage['name'] if stage else ''}):</b>")
+    await safe_edit_message(query, f"➕ <b>إضافة صف جديد لمرحلة: {stage['name'] if stage else ''}</b>\nأرسل اسم الصف الجديد في رسالة:")
 
 
 async def start_rename_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -291,7 +291,7 @@ async def start_rename_class(update: Update, context: ContextTypes.DEFAULT_TYPE)
     class_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'rename_class_{class_id}'
     cls = await repository.get_class_by_id(class_id)
-    await safe_edit_message(query, f"✏️ <b>أرسل الاسم الجديد لصف ({cls['name'] if cls else ''}):</b>")
+    await safe_edit_message(query, f"✏️ <b>تعديل اسم الصف</b>\nالاسم الحالي: <b>{cls['name'] if cls else ''}</b>\n\nأرسل الاسم الجديد:")
 
 
 async def confirm_delete_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -309,7 +309,7 @@ async def confirm_delete_class(update: Update, context: ContextTypes.DEFAULT_TYP
         [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف النهائي", callback_data=f"adm_del_cls_exec_{class_id}")],
         [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_bks_{class_id}")]
     ])
-    await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف صف: {cls['name'] if cls else ''}؟</b>", reply_markup=keyboard)
+    await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف صف: {cls['name'] if cls else ''}؟</b>\nسيتم حذف كافة الكتب التابعة له أيضاً!", reply_markup=keyboard)
 
 
 async def exec_delete_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -342,7 +342,7 @@ async def start_upload_books(update: Update, context: ContextTypes.DEFAULT_TYPE)
     class_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'upload_book_{class_id}'
     cls = await repository.get_class_by_id(class_id)
-    await safe_edit_message(query, f"🚀 <b>أرسل ملفات الـ PDF لصف ({cls['name'] if cls else ''}):</b>")
+    await safe_edit_message(query, f"🚀 <b>رفع كتب لصف: {cls['name'] if cls else ''}</b>\n\nأرسل ملف الكرات أو الكتب بصيغة PDF فوراً في محادثة مباشرة وسأقوم بحفظها وتنسيق اسمها تلقائياً.")
 
 
 async def view_class_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -360,9 +360,9 @@ async def view_class_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     stage_id = cls['stage_id'] if cls else 1
     
     if not books:
-        await safe_edit_message(query, f"⚠️ <b>لا توجد كتب مضافة لصف {cls['name'] if cls else ''}</b>", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
+        await safe_edit_message(query, f"⚠️ لا توجد كتب مضافة في صف <b>{cls['name'] if cls else ''}</b> بعد.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
         return
-    await safe_edit_message(query, f"📚 <b>كتب {cls['name'] if cls else ''}</b>", reply_markup=inline.get_admin_class_books_list_keyboard(books, class_id, stage_id))
+    await safe_edit_message(query, f"📚 <b>كتب صف: {cls['name'] if cls else ''}</b>\nاختر الكتاب للتحكم به أو استخدم الأدوات أدناه:", reply_markup=inline.get_admin_class_books_list_keyboard(books, class_id, stage_id))
 
 
 async def view_single_book_card(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -380,8 +380,10 @@ async def view_single_book_card(update: Update, context: ContextTypes.DEFAULT_TY
         await safe_edit_message(query, "❌ الكتاب غير موجود.")
         return
     text = (
-        f"📘 <b>{book['title']}</b>\n"
-        f"🏛️ {book['stage_name']} - 🎓 {book['class_name']}"
+        f"📘 <b>كارت إدارة كتاب مفرد</b>\n\n"
+        f"📌 <b>العنوان:</b> {book['title']}\n"
+        f"🏛️ <b>المرحلة والصف:</b> {book['stage_name']} - {book['class_name']}\n"
+        f"🆔 <b>file_id:</b> <code>{book['telegram_file_id']}</code>"
     )
     await safe_edit_message(query, text, reply_markup=inline.get_admin_single_book_card_keyboard(book_id, book['class_id']))
 

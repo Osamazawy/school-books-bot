@@ -13,28 +13,21 @@ CREATE TABLE IF NOT EXISTS stages (
 CREATE TABLE IF NOT EXISTS classes (
     id SERIAL PRIMARY KEY,
     stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL,
+    CONSTRAINT unique_stage_class UNIQUE (stage_id, name)
 );
 
--- 3. جدول المواد الدراسية (Subjects)
-CREATE TABLE IF NOT EXISTS subjects (
-    id SERIAL PRIMARY KEY,
-    class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL
-);
-
--- 4. جدول الكتب (Books)
+-- 3. جدول الكتب (Books)
 CREATE TABLE IF NOT EXISTS books (
     id SERIAL PRIMARY KEY,
     class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-    subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     telegram_file_id TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 5. جدول المستخدمين (Users)
+-- 4. جدول المستخدمين (Users)
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     telegram_id BIGINT UNIQUE NOT NULL,

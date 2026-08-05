@@ -146,15 +146,10 @@ async def init_db():
                         name VARCHAR(255) NOT NULL,
                         CONSTRAINT unique_stage_class UNIQUE (stage_id, name)
                     );
-                    CREATE TABLE IF NOT EXISTS subjects (
-                        id SERIAL PRIMARY KEY,
-                        class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-                        name VARCHAR(255) NOT NULL
-                    );
+                    DROP TABLE IF EXISTS subjects CASCADE;
                     CREATE TABLE IF NOT EXISTS books (
                         id SERIAL PRIMARY KEY,
                         class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-                        subject_id INTEGER REFERENCES subjects(id) ON DELETE SET NULL,
                         title VARCHAR(255) NOT NULL,
                         description TEXT,
                         telegram_file_id TEXT NOT NULL,
@@ -166,9 +161,6 @@ async def init_db():
                         full_name TEXT,
                         join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
-                    
-                    -- تنظيف الصفوف المكررة إن وجدت من المرات السابقة
-                    DELETE FROM classes a USING classes b WHERE a.id > b.id AND a.stage_id = b.stage_id AND a.name = b.name;
 
                     INSERT INTO stages (id, name) VALUES (1, 'المرحلة الابتدائية'), (2, 'المرحلة المتوسطة'), (3, 'المرحلة الإعدادية') ON CONFLICT (id) DO NOTHING;
                     INSERT INTO classes (stage_id, name) VALUES 
@@ -201,25 +193,16 @@ async def init_db():
                     UNIQUE (stage_id, name)
                 );
             """)
-            await db.execute("""
-                CREATE TABLE IF NOT EXISTS subjects (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    class_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    FOREIGN KEY (class_id) REFERENCES classes (id) ON DELETE CASCADE
-                );
-            """)
+            await db.execute("DROP TABLE IF EXISTS subjects;")
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS books (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     class_id INTEGER NOT NULL,
-                    subject_id INTEGER,
                     title TEXT NOT NULL,
                     description TEXT,
                     telegram_file_id TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (class_id) REFERENCES classes (id) ON DELETE CASCADE,
-                    FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE SET NULL
+                    FOREIGN KEY (class_id) REFERENCES classes (id) ON DELETE CASCADE
                 );
             """)
             await db.execute("""
