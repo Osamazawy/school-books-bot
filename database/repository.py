@@ -154,7 +154,7 @@ async def get_books_by_class(class_id: int) -> List[Dict[str, Any]]:
     """استرجاع جميع كتب صف محدد."""
     async with get_db_connection() as db:
         async with db.execute("""
-            SELECT id, class_id, subject_id, title, description, telegram_file_id, created_at
+            SELECT id, class_id, title, description, telegram_file_id, created_at
             FROM books WHERE class_id = ? ORDER BY id ASC;
         """, (class_id,)) as cursor:
             rows = await cursor.fetchall()
@@ -164,7 +164,7 @@ async def get_book_by_id(book_id: int) -> Optional[Dict[str, Any]]:
     """استرجاع تفاصيل كتاب واحد بجميع تفاصيله الهيكلية."""
     async with get_db_connection() as db:
         async with db.execute("""
-            SELECT b.id, b.class_id, b.subject_id, b.title, b.description, b.telegram_file_id, b.created_at,
+            SELECT b.id, b.class_id, b.title, b.description, b.telegram_file_id, b.created_at,
                    c.name as class_name, c.stage_id, st.name as stage_name
             FROM books b
             JOIN classes c ON b.class_id = c.id
