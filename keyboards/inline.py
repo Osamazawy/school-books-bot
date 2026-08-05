@@ -96,7 +96,6 @@ def get_admin_stage_card_keyboard(stage_id: int) -> InlineKeyboardMarkup:
     """كارت التحكم الخاص بالمرحلة (Stage Card)."""
     keyboard = [
         [InlineKeyboardButton("🎓 عرض وإدارة الصفوف", callback_data=f"adm_view_cls_{stage_id}")],
-        [InlineKeyboardButton("➕ إضافة صفوف جديدة لهذه المرحلة", callback_data=f"adm_add_cls_batch_{stage_id}")],
         [
             InlineKeyboardButton("🗑️ حذف هذه المرحلة", callback_data=f"adm_del_stg_confirm_{stage_id}"),
             InlineKeyboardButton("✏️ تعديل اسم المرحلة", callback_data=f"adm_ren_stg_{stage_id}")
