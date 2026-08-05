@@ -121,6 +121,12 @@ async def init_db():
                         full_name TEXT,
                         join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
+                    INSERT INTO stages (id, name) VALUES (1, 'المرحلة الابتدائية'), (2, 'المرحلة المتوسطة'), (3, 'المرحلة الإعدادية') ON CONFLICT (id) DO NOTHING;
+                    INSERT INTO classes (stage_id, name) VALUES 
+                        (1, 'الأول الابتدائي'), (1, 'الثاني الابتدائي'), (1, 'الثالث الابتدائي'), (1, 'الرابع الابتدائي'), (1, 'الخامس الابتدائي'), (1, 'السادس الابتدائي'),
+                        (2, 'الأول المتوسط'), (2, 'الثاني المتوسط'), (2, 'الثالث المتوسط'),
+                        (3, 'الرابع العلمي'), (3, 'الرابع الأدبي'), (3, 'الخامس العلمي'), (3, 'الخامس الأدبي'), (3, 'السادس العلمي'), (3, 'السادس الأدبي')
+                    ON CONFLICT DO NOTHING;
                 """)
                 conn.commit()
                 conn.close()

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import BOT_TOKEN, WEBHOOK_URL
 from handlers.user_handlers import register_user_handlers
-from handlers.search_handlers import get_search_handler
+from handlers.search_handlers import register_search_handlers
 from handlers.admin_handlers import register_admin_handlers
 
 app = FastAPI()
@@ -38,7 +38,7 @@ def create_telegram_app():
         .defaults(defaults)
         .build()
     )
-    bot_app.add_handler(get_search_handler())
+    register_search_handlers(bot_app)
     register_admin_handlers(bot_app)
     register_user_handlers(bot_app)
     return bot_app

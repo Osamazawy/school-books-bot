@@ -13,7 +13,7 @@ from config import BOT_TOKEN
 from utils.logger import logger
 from database.connection import init_db
 from handlers.user_handlers import register_user_handlers
-from handlers.search_handlers import get_search_handler
+from handlers.search_handlers import register_search_handlers
 from handlers.admin_handlers import register_admin_handlers
 
 async def post_init(application):
@@ -48,7 +48,7 @@ def main():
         .build()
     )
 
-    application.add_handler(get_search_handler())
+    register_search_handlers(application)
     register_admin_handlers(application)
     register_user_handlers(application)
 
