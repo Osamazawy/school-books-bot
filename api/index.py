@@ -48,18 +48,19 @@ async def execute_webhook(request: Request):
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
 async def handle_all_routes(request: Request, full_path: str = ""):
+    query_path = request.query_params.get("path", "").lower()
     raw_url = str(request.url).lower()
     raw_path = str(request.url.path).lower()
-    combined = f"{full_path} {raw_url} {raw_path}".lower()
+    combined = f"{full_path} {raw_url} {raw_path} {query_path}".lower()
     
-    if "set_webhook" in combined:
+    if "set_webhook" in combined or query_path == "set_webhook":
         return await execute_set_webhook()
     
-    if "webhook" in combined and request.method == "POST":
+    if ("webhook" in combined or query_path == "webhook") and request.method == "POST":
         return await execute_webhook(request)
     
     return {
         "status": "ok",
         "message": "Bot is active and running on Vercel Serverless!",
-        "requested_url": str(request.url)
+        "path_detected": query_path or full_path
     }
