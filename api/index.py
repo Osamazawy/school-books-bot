@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 from fastapi import FastAPI, Request
 from telegram import Update
 from telegram.ext import ApplicationBuilder, Defaults
@@ -40,11 +41,15 @@ async def execute_set_webhook():
     return {"success": success, "webhook_url": target_url}
 
 async def execute_webhook(request: Request):
-    data = await request.json()
-    async with bot_app:
-        update = Update.de_json(data, bot_app.bot)
-        await bot_app.process_update(update)
-    return {"status": "ok"}
+    try:
+        data = await request.json()
+        async with bot_app:
+            update = Update.de_json(data, bot_app.bot)
+            await bot_app.process_update(update)
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
+        return {"status": "error", "message": str(e)}
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
 async def handle_all_routes(request: Request, full_path: str = ""):

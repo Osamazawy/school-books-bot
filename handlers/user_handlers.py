@@ -10,8 +10,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not user:
         return
 
-    await repository.add_or_update_user(telegram_id=user.id, full_name=user.full_name or "بدون اسم")
-    logger.info(f"المستخدم {user.id} ({user.full_name}) قَام بتشغيل البوت.")
+    try:
+        await repository.add_or_update_user(telegram_id=user.id, full_name=user.full_name or "بدون اسم")
+    except Exception as e:
+        logger.error(f"خطأ أثناء حفظ/تحديث المستخدم {user.id}: {e}")
 
     is_admin = user.id in ADMIN_IDS
     welcome_text = (
