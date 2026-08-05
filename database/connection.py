@@ -134,7 +134,10 @@ async def init_db():
         try:
             def _init_pg():
                 conn = psycopg2.connect(db_url)
+                conn.autocommit = False
                 cur = conn.cursor()
+
+                # 1. إنشاء المراحل والصفوف أولاً
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS stages (
                         id SERIAL PRIMARY KEY,
@@ -143,11 +146,29 @@ async def init_db():
                     CREATE TABLE IF NOT EXISTS classes (
                         id SERIAL PRIMARY KEY,
                         stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
-                        name VARCHAR(255) NOT NULL,
-                        CONSTRAINT unique_stage_class UNIQUE (stage_id, name)
+                        name VARCHAR(255) NOT NULL
                     );
-                    ALTER TABLE books DROP COLUMN IF EXISTS subject_id;
-                    DROP TABLE IF EXISTS subjects CASCADE;
+                """)
+                conn.commit()
+
+                # إضافة قيد التفرّد إن لم يكن موجوداً
+                try:
+                    cur.execute("ALTER TABLE classes ADD CONSTRAINT unique_stage_class UNIQUE (stage_id, name);")
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+
+                # 2. إزالة جدول subjects والعمود المرتبط به فوراً
+                try:
+                    cur.execute("DROP TABLE IF EXISTS subjects CASCADE;")
+                    cur.execute("ALTER TABLE IF EXISTS books DROP COLUMN IF EXISTS subject_id;")
+                    conn.commit()
+                except Exception as e:
+                    conn.rollback()
+                    logger.error(f"خطأ أثناء حذف subjects: {e}")
+
+                # 3. إنشاء جدول الكتب والمستخدمين
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS books (
                         id SERIAL PRIMARY KEY,
                         class_id INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
@@ -162,15 +183,23 @@ async def init_db():
                         full_name TEXT,
                         join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
-
-                    INSERT INTO stages (id, name) VALUES (1, 'المرحلة الابتدائية'), (2, 'المرحلة المتوسطة'), (3, 'المرحلة الإعدادية') ON CONFLICT (id) DO NOTHING;
-                    INSERT INTO classes (stage_id, name) VALUES 
-                        (1, 'الأول الابتدائي'), (1, 'الثاني الابتدائي'), (1, 'الثالث الابتدائي'), (1, 'الرابع الابتدائي'), (1, 'الخامس الابتدائي'), (1, 'السادس الابتدائي'),
-                        (2, 'الأول المتوسط'), (2, 'الثاني المتوسط'), (2, 'الثالث المتوسط'),
-                        (3, 'الرابع العلمي'), (3, 'الرابع الأدبي'), (3, 'الخامس العلمي'), (3, 'الخامس الأدبي'), (3, 'السادس العلمي'), (3, 'السادس الأدبي')
-                    ON CONFLICT (stage_id, name) DO NOTHING;
                 """)
                 conn.commit()
+
+                # 4. إدراج المراحل والصفوف الافتراضية بأمان
+                try:
+                    cur.execute("INSERT INTO stages (id, name) VALUES (1, 'المرحلة الابتدائية'), (2, 'المرحلة المتوسطة'), (3, 'المرحلة الإعدادية') ON CONFLICT (id) DO NOTHING;")
+                    cur.execute("""
+                        INSERT INTO classes (stage_id, name) VALUES 
+                            (1, 'الأول الابتدائي'), (1, 'الثاني الابتدائي'), (1, 'الثالث الابتدائي'), (1, 'الرابع الابتدائي'), (1, 'الخامس الابتدائي'), (1, 'السادس الابتدائي'),
+                            (2, 'الأول المتوسط'), (2, 'الثاني المتوسط'), (2, 'الثالث المتوسط'),
+                            (3, 'الرابع العلمي'), (3, 'الرابع الأدبي'), (3, 'الخامس العلمي'), (3, 'الخامس الأدبي'), (3, 'السادس العلمي'), (3, 'السادس الأدبي')
+                        ON CONFLICT DO NOTHING;
+                    """)
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+
                 conn.close()
 
             await asyncio.to_thread(_init_pg)
