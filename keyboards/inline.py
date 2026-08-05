@@ -112,7 +112,7 @@ def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboa
             keyboard.append([btn])
     if use_grid and row:
         keyboard.append(row[::-1])
-    keyboard.append([InlineKeyboardButton("➕ 📊 إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
+    keyboard.append([InlineKeyboardButton("✨ إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
     keyboard.append([InlineKeyboardButton("↩️ لوحة التحكم", callback_data="admin_panel")])
     return InlineKeyboardMarkup(keyboard)
 
@@ -134,7 +134,7 @@ def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int
     if use_grid and row:
         keyboard.append(row[::-1])
 
-    keyboard.append([InlineKeyboardButton("➕ 📋 إضافة صف جديد", callback_data=f"adm_add_cls_batch_{stage_id}")])
+    keyboard.append([InlineKeyboardButton("✨ إضافة صف جديد", callback_data=f"adm_add_cls_batch_{stage_id}")])
     keyboard.append([
         InlineKeyboardButton("✏️ تعديل الاسم", callback_data=f"adm_ren_stg_{stage_id}"),
         InlineKeyboardButton("🗑️ حذف المرحلة", callback_data=f"adm_del_stg_confirm_{stage_id}")
