@@ -11,7 +11,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     is_admin = user.id in ADMIN_IDS
-    welcome_text = f"مرحباً بك يا <b>{user.first_name}</b> في بوت الكتب الدراسية 📚✨"
+    welcome_text = f"مرحباً بك <b>{user.first_name}</b> 📚✨"
     
     if update.message:
         await update.message.reply_text(
@@ -53,7 +53,7 @@ async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         user = update.effective_user
         is_admin = user.id in ADMIN_IDS if user else False
         await query.edit_message_text(
-            "⚠️ لا توجد مراحل مضافة.",
+            "⚠️ لا توجد مراحل دراسية مضافة حالياً.",
             reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
         )
         return
@@ -102,7 +102,7 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
 
     if not books:
         await query.edit_message_text(
-            f"⚠️ لا توجد كتب مضافة لـ <b>{class_name}</b>.",
+            f"⚠️ لا توجد كتب مضافة لـ <b>{class_name}</b> حتى الآن.",
             parse_mode="HTML",
             reply_markup=inline.get_books_keyboard([], stage_id)
         )
@@ -126,8 +126,10 @@ async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
 
     caption = (
-        f"📘 <b>{book['title']}</b>\n"
-        f"🏛️ {book['stage_name']} - 🎓 {book['class_name']}"
+        f"📘 <b>{book['title']}</b>\n\n"
+        f"🏛️ <b>المرحلة:</b> {book['stage_name']}\n"
+        f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
+        "اضغط على الزر أدناه لإرسال ملف الـ PDF فوراً:"
     )
     
     await query.edit_message_text(

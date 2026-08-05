@@ -145,6 +145,25 @@ async def send_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     success = 0
     failed = 0
     
+    for uid in user_ids:
+        try:
+            await update.message.copy(chat_id=uid)
+            success += 1
+            await asyncio.sleep(0.04)
+        except Exception:
+            failed += 1
+
+    await status_msg.edit_text(
+        f"🎉 <b>تمت الإذاعة بنجاح!</b>\n\n"
+        f"✅ تم الإرسال إلى: <b>{success}</b> مستخدم\n"
+        f"❌ تعذر الإرسال إلى: <b>{failed}</b> مستخدم",
+        parse_mode="HTML",
+        reply_markup=inline.get_admin_main_keyboard()
+    )
+
+
+# ==================== 1. المستوى الأول: إدارة المراحل (Stage Level) ====================
+
 async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await check_admin(update):
         return
@@ -162,7 +181,7 @@ async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_
         reply_markup = inline.get_admin_stages_list_keyboard(stages)
     except Exception as e:
         logger.error(f"خطأ جلب المراحل: {e}")
-        text = f"❌ <b>حدث خطأ أثناء جلب المراحل:</b>\n<code>{e}</code>"
+        text = f"❌ <b>حدث خطأ:</b>\n<code>{e}</code>"
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")]])
 
     await safe_edit_message(query, text, reply_markup=reply_markup)
@@ -211,7 +230,7 @@ async def confirm_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYP
         [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف النهائي", callback_data=f"adm_del_stg_exec_{stage_id}")],
         [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_cls_{stage_id}")]
     ])
-    await safe_edit_message(query, f"⚠️ <b>تأكيد حذف مرحلة ({stage['name'] if stage else ''}) وكافة محتوياتها؟</b>", reply_markup=keyboard)
+    await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف مرحلة: {stage['name'] if stage else ''}؟</b>", reply_markup=keyboard)
 
 
 async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -225,7 +244,7 @@ async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             pass
     stage_id = int(query.data.split("_")[-1])
     await repository.delete_stage(stage_id)
-    await safe_edit_message(query, "✅ تم حذف المرحلة وكافة محتوياتها بنجاح.", reply_markup=inline.get_admin_main_keyboard())
+    await safe_edit_message(query, "✅ تم حذف المرحلة بنجاح.", reply_markup=inline.get_admin_main_keyboard())
 
 
 # ==================== 2. المستوى الثاني: إدارة الصفوف والكتب المباشرة ====================
@@ -257,7 +276,7 @@ async def start_add_class_batch(update: Update, context: ContextTypes.DEFAULT_TY
     stage_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'add_class_{stage_id}'
     stage = await repository.get_stage_by_id(stage_id)
-    await safe_edit_message(query, f"➕ <b>أرسل اسم الصف الجديد لـ ({stage['name'] if stage else ''}):</b>")
+    await safe_edit_message(query, f"➕ <b>أرسل اسم الصف الجديد لمرحلة ({stage['name'] if stage else ''}):</b>")
 
 
 async def start_rename_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -272,7 +291,7 @@ async def start_rename_class(update: Update, context: ContextTypes.DEFAULT_TYPE)
     class_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'rename_class_{class_id}'
     cls = await repository.get_class_by_id(class_id)
-    await safe_edit_message(query, f"✏️ <b>أرسل الاسم الجديد لـ ({cls['name'] if cls else ''}):</b>")
+    await safe_edit_message(query, f"✏️ <b>أرسل الاسم الجديد لصف ({cls['name'] if cls else ''}):</b>")
 
 
 async def confirm_delete_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -290,7 +309,7 @@ async def confirm_delete_class(update: Update, context: ContextTypes.DEFAULT_TYP
         [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف النهائي", callback_data=f"adm_del_cls_exec_{class_id}")],
         [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_bks_{class_id}")]
     ])
-    await safe_edit_message(query, f"⚠️ <b>تأكيد حذف صف ({cls['name'] if cls else ''}) وكافة كتبه؟</b>", reply_markup=keyboard)
+    await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف صف: {cls['name'] if cls else ''}؟</b>", reply_markup=keyboard)
 
 
 async def exec_delete_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -323,7 +342,7 @@ async def start_upload_books(update: Update, context: ContextTypes.DEFAULT_TYPE)
     class_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'upload_book_{class_id}'
     cls = await repository.get_class_by_id(class_id)
-    await safe_edit_message(query, f"🚀 <b>أرسل كتب {cls['name'] if cls else ''} (PDF) الآن:</b>")
+    await safe_edit_message(query, f"🚀 <b>أرسل ملفات الـ PDF لصف ({cls['name'] if cls else ''}):</b>")
 
 
 async def view_class_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -341,7 +360,7 @@ async def view_class_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     stage_id = cls['stage_id'] if cls else 1
     
     if not books:
-        await safe_edit_message(query, f"⚠️ <b>لا توجد كتب مضافة لـ {cls['name'] if cls else ''}</b>", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
+        await safe_edit_message(query, f"⚠️ <b>لا توجد كتب مضافة لصف {cls['name'] if cls else ''}</b>", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
         return
     await safe_edit_message(query, f"📚 <b>كتب {cls['name'] if cls else ''}</b>", reply_markup=inline.get_admin_class_books_list_keyboard(books, class_id, stage_id))
 
@@ -360,7 +379,10 @@ async def view_single_book_card(update: Update, context: ContextTypes.DEFAULT_TY
     if not book:
         await safe_edit_message(query, "❌ الكتاب غير موجود.")
         return
-    text = f"📘 <b>{book['title']}</b>\n🏛️ {book['stage_name']} - 🎓 {book['class_name']}"
+    text = (
+        f"📘 <b>{book['title']}</b>\n"
+        f"🏛️ {book['stage_name']} - 🎓 {book['class_name']}"
+    )
     await safe_edit_message(query, text, reply_markup=inline.get_admin_single_book_card_keyboard(book_id, book['class_id']))
 
 
@@ -376,41 +398,6 @@ async def start_rename_book(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     book_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'rename_book_{book_id}'
     book = await repository.get_book_by_id(book_id)
-    await safe_edit_message(query, f"✏️ <b>أرسل العنوان الجديد لـ ({book['title'] if book else ''}):</b>")
-
-
-async def confirm_delete_single_book(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not await check_admin(update):
-        return
-    query = update.callback_query
-    if query:
-        try:
-            await query.answer()
-        except Exception:
-            pass
-    book_id = int(query.data.split("_")[-1])
-    book = await repository.get_book_by_id(book_id)
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف", callback_data=f"adm_del_bk_exec_{book_id}")],
-        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_book_card_{book_id}")]
-    ])
-    await safe_edit_message(query, f"⚠️ <b>تأكيد حذف كتاب ({book['title'] if book else ''})؟</b>", reply_markup=keyboard)
-
-
-async def exec_delete_single_book(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not await check_admin(update):
-        return
-    query = update.callback_query
-    if query:
-        try:
-            await query.answer()
-        except Exception:
-            pass
-    book_id = int(query.data.split("_")[-1])
-    book = await repository.get_book_by_id(book_id)
-    class_id = book['class_id'] if book else 1
-    await repository.delete_book(book_id)
-    await safe_edit_message(query, "✅ تم حذف الكتاب نهائياً.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, 1))k_by_id(book_id)
     await safe_edit_message(query, f"✏️ <b>تعديل عنوان الكتاب</b>\nالعنوان الحالي: <b>{book['title'] if book else ''}</b>\n\nأرسل العنوان الجديد:")
 
 
