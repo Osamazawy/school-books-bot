@@ -4,13 +4,15 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
     """القائمة الرئيسية للبوت."""
     keyboard = [
-        [
-            InlineKeyboardButton("🔍 البحث عن كتاب", callback_data="user_search"),
-            InlineKeyboardButton("📚 المراحل الدراسية", callback_data="user_stages")
-        ]
+        [InlineKeyboardButton("📚 المراحل الدراسية", callback_data="user_stages")]
     ]
     if is_admin:
-        keyboard.append([InlineKeyboardButton("⚙️ لوحة التحكم (للمشرفين)", callback_data="admin_panel")])
+        keyboard.append([
+            InlineKeyboardButton("⚙️ لوحة التحكم", callback_data="admin_panel"),
+            InlineKeyboardButton("🔍 البحث عن كتاب", callback_data="user_search")
+        ])
+    else:
+        keyboard.append([InlineKeyboardButton("🔍 البحث عن كتاب", callback_data="user_search")])
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -82,10 +84,10 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
     keyboard = [
         [InlineKeyboardButton("🏛️ إدارة المناهج والمراحل والصفوف", callback_data="adm_manage_curriculum")],
         [
-            InlineKeyboardButton("🏠 القائمة الرئيسية", callback_data="main_menu"),
-            InlineKeyboardButton("📢 إذاعة للطلاب", callback_data="admin_broadcast")
+            InlineKeyboardButton("📢 إذاعة للطلاب", callback_data="admin_broadcast"),
+            InlineKeyboardButton("📊 الإحصائيات الشاملة", callback_data="admin_stats")
         ],
-        [InlineKeyboardButton("📊 الإحصائيات الشاملة", callback_data="admin_stats")]
+        [InlineKeyboardButton("🏠 القائمة الرئيسية", callback_data="main_menu")]
     ]
     return InlineKeyboardMarkup(keyboard)
 
