@@ -61,6 +61,24 @@ async def get_all_stages() -> List[Dict[str, Any]]:
             rows = await cursor.fetchall()
             return [_dict(row) for row in rows]
 
+async def get_all_stages_with_classes() -> List[Dict[str, Any]]:
+    """جلب جميع المراحل مع صفوفها التابعة لعرضها في شاشة واحدة جليلة."""
+    async with get_db_connection() as db:
+        async with db.execute("SELECT id, name FROM stages ORDER BY id ASC;") as cursor:
+            stage_rows = await cursor.fetchall()
+            stages = [_dict(r) for r in stage_rows]
+            
+        result = []
+        for stage in stages:
+            async with db.execute("SELECT id, stage_id, name FROM classes WHERE stage_id = ? ORDER BY id ASC;", (stage['id'],)) as cursor:
+                class_rows = await cursor.fetchall()
+                classes = [_dict(r) for r in class_rows]
+            result.append({
+                "stage": stage,
+                "classes": classes
+            })
+        return result
+
 async def get_stage_by_id(stage_id: int) -> Optional[Dict[str, Any]]:
     async with get_db_connection() as db:
         async with db.execute("SELECT id, name FROM stages WHERE id = ?;", (stage_id,)) as cursor:

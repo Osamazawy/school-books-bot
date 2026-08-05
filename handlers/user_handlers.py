@@ -11,23 +11,25 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
 
     is_admin = user.id in ADMIN_IDS
+    stages_with_classes = await repository.get_all_stages_with_classes()
     welcome_text = (
         f"مرحباً بك يا <b>{user.first_name}</b> في بوت المناهج والكتب الدراسية 📚✨\n\n"
-        "اختر <b>المراحل الدراسية</b> للتنقل بين الصفوف وتحميل المناهج بصيغة PDF فوراً."
+        "اختر <b>الصف الدراسي</b> المطلوب أدناه لتحميل مناهجه وكتبه فوراً بصيغة PDF:"
     )
     
+    keyboard = inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=is_admin)
     if update.message:
         await update.message.reply_text(
             welcome_text,
             parse_mode="HTML",
-            reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
+            reply_markup=keyboard
         )
     elif update.callback_query:
         await update.callback_query.answer()
         await update.callback_query.edit_message_text(
             welcome_text,
             parse_mode="HTML",
-            reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
+            reply_markup=keyboard
         )
 
     try:
@@ -40,32 +42,38 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await query.answer()
     user = update.effective_user
     is_admin = user.id in ADMIN_IDS if user else False
+    stages_with_classes = await repository.get_all_stages_with_classes()
     
     await query.edit_message_text(
-        "📚 <b>القائمة الرئيسية</b>\nيرجى اختيار القسم المطلوب من الأزرار أدناه:",
+        "🎓 <b>المناهج والصفوف الدراسية</b>\nيرجى اختيار الصف المطلوب من القائمة أدناه:",
         parse_mode="HTML",
-        reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
+        reply_markup=inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=is_admin)
     )
 
 async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer("🏛️ جاري عرض المراحل...")
+    await query.answer("🎓 جاري عرض الصفوف...")
+    user = update.effective_user
+    is_admin = user.id in ADMIN_IDS if user else False
+    stages_with_classes = await repository.get_all_stages_with_classes()
     
-    stages = await repository.get_all_stages()
-    if not stages:
-        user = update.effective_user
-        is_admin = user.id in ADMIN_IDS if user else False
+    if not stages_with_classes:
         await query.edit_message_text(
-            "⚠️ لا توجد مراحل دراسية مضافة حالياً في قاعدة البيانات.",
+            "⚠️ لا توجد مراحل أو صفوف دراسية مضافة حالياً في قاعدة البيانات.",
             reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
         )
         return
 
     await query.edit_message_text(
-        "🏛️ <b>المراحل الدراسية</b>\nاختر المرحلة الدراسية لعرض صفوفها المتاحة:",
+        "🎓 <b>المناهج والصفوف الدراسية</b>\nاختر الصف الدراسي لعرض كتبه المتاحة:",
         parse_mode="HTML",
-        reply_markup=inline.get_stages_keyboard(stages)
+        reply_markup=inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=is_admin)
     )
+
+async def info_noop_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    if query:
+        await query.answer("📌 هذا عنوان المرحلة الدراسية، يرجى اختيار الصف التابع لها أدناه.")
 
 async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -171,6 +179,7 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
 def register_user_handlers(app):
     app.add_handler(CommandHandler("start", start_handler))
+    app.add_handler(CallbackQueryHandler(info_noop_handler, pattern="^info_noop$"))
     app.add_handler(CallbackQueryHandler(main_menu_handler, pattern="^main_menu$"))
     app.add_handler(CallbackQueryHandler(list_stages_handler, pattern="^(user_stages|user_grades)$"))
     app.add_handler(CallbackQueryHandler(list_classes_handler, pattern="^user_stage_\\d+$"))

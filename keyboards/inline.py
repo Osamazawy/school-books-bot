@@ -1,11 +1,66 @@
-from typing import List, Dict, Any
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+STAGE_PALETTES = [
+    {"header_icon": "🟢", "btn_icon": "🟢"},
+    {"header_icon": "🟡", "btn_icon": "🟡"},
+    {"header_icon": "🔴", "btn_icon": "🔴"},
+    {"header_icon": "🟣", "btn_icon": "🟣"},
+    {"header_icon": "🔵", "btn_icon": "🔵"},
+]
 
-def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
-    """القائمة الرئيسية للبوت."""
+def get_class_num_icon(class_name: str) -> str:
+    if "الأول" in class_name or "1" in class_name:
+        return "1️⃣ "
+    if "الثاني" in class_name or "2" in class_name:
+        return "2️⃣ "
+    if "الثالث" in class_name or "3" in class_name:
+        return "3️⃣ "
+    if "الرابع" in class_name or "4" in class_name:
+        return "4️⃣ "
+    if "الخامس" in class_name or "5" in class_name:
+        return "5️⃣ "
+    if "السادس" in class_name or "6" in class_name:
+        return "6️⃣ "
+    return ""
+
+
+def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], is_admin: bool = False) -> InlineKeyboardMarkup:
+    """عرض الشاشة الموحدة للمراحل والصفوف بألوان مخصصة لكل مرحلة وجذب بصري 2026."""
+    keyboard = []
+    
+    for idx, item in enumerate(stages_with_classes):
+        stage = item["stage"]
+        classes = item["classes"]
+        palette = STAGE_PALETTES[idx % len(STAGE_PALETTES)]
+        
+        # عنوان المرحلة الرأسي الفاخر
+        h_icon = palette["header_icon"]
+        header_text = f"{h_icon} {h_icon} {h_icon} {stage['name']} {h_icon} {h_icon} {h_icon}"
+        keyboard.append([InlineKeyboardButton(header_text, callback_data="info_noop")])
+        
+        # أزرار الصفوف التابعة للمرحلة
+        row = []
+        for cls in classes:
+            num_icon = get_class_num_icon(cls['name'])
+            btn_text = f"{palette['btn_icon']} {num_icon}{cls['name']}".strip()
+            btn = InlineKeyboardButton(btn_text, callback_data=f"user_class_{cls['id']}")
+            row.append(btn)
+            if len(row) == 2:
+                keyboard.append(row[::-1])
+                row = []
+        if row:
+            keyboard.append(row[::-1])
+
+    if is_admin:
+        keyboard.append([InlineKeyboardButton("⚙️ لوحة التحكم", callback_data="admin_panel")])
+    return InlineKeyboardMarkup(keyboard)
+
+
+def get_main_menu_keyboard(stages_with_classes: List[Dict[str, Any]] = None, is_admin: bool = False) -> InlineKeyboardMarkup:
+    """القائمة الرئيسية المباشرة للبوت."""
+    if stages_with_classes:
+        return get_stages_and_classes_keyboard(stages_with_classes, is_admin=is_admin)
+        
     keyboard = [
-        [InlineKeyboardButton("📊 المراحل الدراسية", callback_data="user_stages")],
-        [InlineKeyboardButton("🔍 البحث عن كتاب", callback_data="user_search")]
+        [InlineKeyboardButton("📊 الصفوف والمناهج الدراسية", callback_data="user_stages")]
     ]
     if is_admin:
         keyboard.append([InlineKeyboardButton("⚙️ لوحة التحكم", callback_data="admin_panel")])
@@ -13,54 +68,30 @@ def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
 
 
 def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض عناصر المراحل للمستخدم: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
+    """عرض عناصر المراحل للمستخدم."""
     keyboard = []
-    use_grid = len(stages) >= 4
-    row = []
     for stage in stages:
-        btn = InlineKeyboardButton(f"📊 {stage['name']}", callback_data=f"user_stage_{stage['id']}")
-        if use_grid:
-            row.append(btn)
-            if len(row) == 2:
-                keyboard.append(row[::-1])
-                row = []
-        else:
-            keyboard.append([btn])
-    if use_grid and row:
-        keyboard.append(row[::-1])
-
+        keyboard.append([InlineKeyboardButton(f"📊 {stage['name']}", callback_data=f"user_stage_{stage['id']}")])
     keyboard.append([InlineKeyboardButton("🏠 القائمة الرئيسية", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
 
 
 def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض عناصر الصفوف للمستخدم: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
+    """عرض عناصر الصفوف للمستخدم."""
     keyboard = []
-    use_grid = len(classes) >= 4
-    row = []
     for cls in classes:
-        btn = InlineKeyboardButton(f"📋 {cls['name']}", callback_data=f"user_class_{cls['id']}")
-        if use_grid:
-            row.append(btn)
-            if len(row) == 2:
-                keyboard.append(row[::-1])
-                row = []
-        else:
-            keyboard.append([btn])
-    if use_grid and row:
-        keyboard.append(row[::-1])
-
-    keyboard.append([InlineKeyboardButton("↩️ العودة للمراحل", callback_data="user_stages")])
+        keyboard.append([InlineKeyboardButton(f"📋 {cls['name']}", callback_data=f"user_class_{cls['id']}")])
+    keyboard.append([InlineKeyboardButton("↩️ القائمة الرئيسية", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
 
 
-def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
+def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int = 1) -> InlineKeyboardMarkup:
     """عرض كتب الصف للمستخدم العادي."""
     keyboard = []
     for book in books:
         keyboard.append([InlineKeyboardButton(f"📖 {book['title']}", callback_data=f"user_book_{book['id']}")])
         
-    keyboard.append([InlineKeyboardButton("↩️ العودة للصفوف", callback_data=f"user_stage_{stage_id}")])
+    keyboard.append([InlineKeyboardButton("↩️ القائمة الرئيسية والصفوف", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
 
 
