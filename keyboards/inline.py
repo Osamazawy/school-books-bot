@@ -1,3 +1,6 @@
+from typing import List, Dict, Any
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
 STAGE_PALETTES = [
     {"header_icon": "🟢", "btn_icon": "🟢"},
     {"header_icon": "🟡", "btn_icon": "🟡"},
