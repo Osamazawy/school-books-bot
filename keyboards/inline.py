@@ -13,12 +13,12 @@ def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
 
 
 def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض عناصر المراحل للمستخدم: محاذاة أقصى اليمين دائماً."""
+    """عرض عناصر المراحل للمستخدم: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
     keyboard = []
     use_grid = len(stages) >= 4
     row = []
     for stage in stages:
-        btn = InlineKeyboardButton(f"  🟢 {stage['name']}                                                  ", callback_data=f"user_stage_{stage['id']}")
+        btn = InlineKeyboardButton(f"  🟢 {stage['name']}", callback_data=f"user_stage_{stage['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
@@ -34,12 +34,12 @@ def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
 
 
 def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض عناصر الصفوف للمستخدم: محاذاة أقصى اليمين دائماً."""
+    """عرض عناصر الصفوف للمستخدم: عمود واحد إذا أقل من 4، وعمودين إذا 4 فأكثر."""
     keyboard = []
     use_grid = len(classes) >= 4
     row = []
     for cls in classes:
-        btn = InlineKeyboardButton(f"  🔹 {cls['name']}                                                  ", callback_data=f"user_class_{cls['id']}")
+        btn = InlineKeyboardButton(f"  🔹 {cls['name']}", callback_data=f"user_class_{cls['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
@@ -55,10 +55,10 @@ def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> Inline
 
 
 def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض كتب الصف للمستخدم العادي محاذاة أقصى اليمين."""
+    """عرض كتب الصف للمستخدم العادي."""
     keyboard = []
     for book in books:
-        keyboard.append([InlineKeyboardButton(f"  📘 {book['title']}                                                  ", callback_data=f"user_book_{book['id']}")])
+        keyboard.append([InlineKeyboardButton(f"  📘 {book['title']}", callback_data=f"user_book_{book['id']}")])
         
     keyboard.append([InlineKeyboardButton("  ↩️                          العودة للصفوف                          ", callback_data=f"user_stage_{stage_id}")])
     return InlineKeyboardMarkup(keyboard)
@@ -74,10 +74,10 @@ def get_book_details_keyboard(book_id: int, class_id: int) -> InlineKeyboardMark
 
 
 def get_search_results_keyboard(books: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """أزرار نتائج البحث محاذاة أقصى اليمين."""
+    """أزرار نتائج البحث."""
     keyboard = []
     for book in books:
-        button_text = f"  📘 {book['title']} ({book['class_name']} - {book['stage_name']})                                                  "
+        button_text = f"  📘 {book['title']} ({book['class_name']} - {book['stage_name']})"
         keyboard.append([InlineKeyboardButton(button_text, callback_data=f"user_book_{book['id']}")])
     keyboard.append([InlineKeyboardButton("  🏠                         القائمة الرئيسية                         ", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
@@ -97,12 +97,12 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض عناصر المراحل للآدمن محاذاة أقصى اليمين."""
+    """عرض عناصر المراحل للآدمن."""
     keyboard = []
     use_grid = len(stages) >= 4
     row = []
     for s in stages:
-        btn = InlineKeyboardButton(f"  🟢 {s['name']}                                                  ", callback_data=f"adm_view_cls_{s['id']}")
+        btn = InlineKeyboardButton(f"  🟢 {s['name']}", callback_data=f"adm_view_cls_{s['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
@@ -118,12 +118,12 @@ def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboa
 
 
 def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض عناصر الصفوف للآدمن محاذاة أقصى اليمين."""
+    """عرض عناصر الصفوف للآدمن."""
     keyboard = []
     use_grid = len(classes) >= 4
     row = []
     for c in classes:
-        btn = InlineKeyboardButton(f"  🔹 {c['name']}                                                  ", callback_data=f"adm_view_bks_{c['id']}")
+        btn = InlineKeyboardButton(f"  🔹 {c['name']}", callback_data=f"adm_view_bks_{c['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
@@ -144,10 +144,10 @@ def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int
 
 
 def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: int, stage_id: int = 1) -> InlineKeyboardMarkup:
-    """عرض كتب الصف للآدمن محاذاة أقصى اليمين."""
+    """عرض كتب الصف للآدمن."""
     keyboard = []
     for b in books:
-        keyboard.append([InlineKeyboardButton(f"  📘 {b['title']}                                                  ", callback_data=f"adm_book_card_{b['id']}")])
+        keyboard.append([InlineKeyboardButton(f"  📘 {b['title']}", callback_data=f"adm_book_card_{b['id']}")])
         
     keyboard.append([InlineKeyboardButton("  🚀                     رفع كتب جديدة لهذا الصف                     ", callback_data=f"adm_upl_bk_{class_id}")])
     keyboard.append([
