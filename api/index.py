@@ -30,24 +30,7 @@ def create_telegram_app():
 
 bot_app = create_telegram_app()
 
-@app.get("/")
-@app.get("/api")
-@app.get("/api/index.py")
-def root():
-    return {"status": "ok", "message": "Bot is running successfully on Vercel!"}
-
-@app.post("/api/webhook")
-@app.post("/api/index.py/webhook")
-async def process_webhook(request: Request):
-    data = await request.json()
-    async with bot_app:
-        update = Update.de_json(data, bot_app.bot)
-        await bot_app.process_update(update)
-    return {"status": "ok"}
-
-@app.get("/api/set_webhook")
-@app.get("/api/index.py/set_webhook")
-async def set_webhook():
+async def execute_set_webhook():
     if not WEBHOOK_URL:
         return {"error": "WEBHOOK_URL environment variable is missing"}
     
@@ -55,3 +38,26 @@ async def set_webhook():
     async with bot_app:
         success = await bot_app.bot.set_webhook(url=target_url)
     return {"success": success, "webhook_url": target_url}
+
+async def execute_webhook(request: Request):
+    data = await request.json()
+    async with bot_app:
+        update = Update.de_json(data, bot_app.bot)
+        await bot_app.process_update(update)
+    return {"status": "ok"}
+
+@app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
+async def handle_all_routes(request: Request, full_path: str = ""):
+    path_lower = full_path.lower()
+    
+    if "set_webhook" in path_lower:
+        return await execute_set_webhook()
+    
+    if "webhook" in path_lower and request.method == "POST":
+        return await execute_webhook(request)
+    
+    return {
+        "status": "ok",
+        "message": "Bot is active and running on Vercel Serverless!",
+        "path": full_path
+    }
