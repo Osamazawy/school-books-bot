@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
-    """القائمة الرئيسية للبوت بتصميم عصري منظم."""
+    """القائمة الرئيسية للبوت."""
     keyboard = [
         [
             InlineKeyboardButton("🔍 البحث عن كتاب", callback_data="user_search"),
@@ -15,7 +15,7 @@ def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
 
 
 def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض المراحل للمستخدم بشكل شبكي محاذي لليمين."""
+    """عرض المراحل للمستخدم من اليمين إلى اليسار (RTL Grid)."""
     keyboard = []
     row = []
     for stage in stages:
@@ -31,7 +31,7 @@ def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
 
 
 def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض الصفوف للمستخدم العادي من اليمين إلى اليسار (RTL)."""
+    """عرض الصفوف للمستخدم العادي من اليمين إلى اليسار (RTL Grid)."""
     keyboard = []
     row = []
     for cls in classes:
@@ -75,10 +75,10 @@ def get_search_results_keyboard(books: List[Dict[str, Any]]) -> InlineKeyboardMa
     return InlineKeyboardMarkup(keyboard)
 
 
-# ==================== لوحة التحكم وكروت المشرفين (Admin Cards 2026) ====================
+# ==================== لوحة التحكم وكروت المشرفين المباشرة (Direct Admin 2026) ====================
 
 def get_admin_main_keyboard() -> InlineKeyboardMarkup:
-    """لوحة تحكم المشرف الرئيسية المنظمة."""
+    """لوحة تحكم المشرف الرئيسية."""
     keyboard = [
         [InlineKeyboardButton("🏛️ إدارة المناهج والمراحل والصفوف", callback_data="adm_manage_curriculum")],
         [
@@ -91,34 +91,27 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """قائمة المراحل المتاحة للآدمن."""
+    """عرض المراحل للآدمن مباشرة وتنقله للصفوف فورا."""
     keyboard = []
+    row = []
     for s in stages:
-        keyboard.append([InlineKeyboardButton(f"🏛️ {s['name']}", callback_data=f"adm_stage_card_{s['id']}")])
+        row.append(InlineKeyboardButton(f"🏛️ {s['name']}", callback_data=f"adm_view_cls_{s['id']}"))
+        if len(row) == 2:
+            keyboard.append(row[::-1])
+            row = []
+    if row:
+        keyboard.append(row[::-1])
     keyboard.append([InlineKeyboardButton("➕ إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
     keyboard.append([InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")])
     return InlineKeyboardMarkup(keyboard)
 
 
-def get_admin_stage_card_keyboard(stage_id: int) -> InlineKeyboardMarkup:
-    """كارت التحكم الخاص بالمرحلة (Stage Card)."""
-    keyboard = [
-        [InlineKeyboardButton("🎓 عرض وإدارة الصفوف", callback_data=f"adm_view_cls_{stage_id}")],
-        [
-            InlineKeyboardButton("🗑️ حذف هذه المرحلة", callback_data=f"adm_del_stg_confirm_{stage_id}"),
-            InlineKeyboardButton("✏️ تعديل اسم المرحلة", callback_data=f"adm_ren_stg_{stage_id}")
-        ],
-        [InlineKeyboardButton("🔙 العودة للمراحل", callback_data="adm_manage_curriculum")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
 def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """قائمة صفوف المرحلة للآدمن (RTL Grid)."""
+    """عرض صفوف المرحلة للآدمن مباشرة وتنقله للكتب فورا مع أدوات المرحلة."""
     keyboard = []
     row = []
     for c in classes:
-        row.append(InlineKeyboardButton(f"🎓 {c['name']}", callback_data=f"adm_class_card_{c['id']}"))
+        row.append(InlineKeyboardButton(f"🎓 {c['name']}", callback_data=f"adm_view_bks_{c['id']}"))
         if len(row) == 2:
             keyboard.append(row[::-1])
             row = []
@@ -126,46 +119,40 @@ def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int
         keyboard.append(row[::-1])
         
     keyboard.append([InlineKeyboardButton("➕ إضافة صف جديد", callback_data=f"adm_add_cls_batch_{stage_id}")])
-    keyboard.append([InlineKeyboardButton("🔙 كارت المرحلة", callback_data=f"adm_stage_card_{stage_id}")])
+    keyboard.append([
+        InlineKeyboardButton("🗑️ حذف هذه المرحلة", callback_data=f"adm_del_stg_confirm_{stage_id}"),
+        InlineKeyboardButton("✏️ تعديل اسم المرحلة", callback_data=f"adm_ren_stg_{stage_id}")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 قائمة المراحل", callback_data="adm_manage_curriculum")])
     return InlineKeyboardMarkup(keyboard)
 
 
-def get_admin_class_card_keyboard(class_id: int, stage_id: int) -> InlineKeyboardMarkup:
-    """كارت التحكم المنطقي للصف (Class Control Card)."""
-    keyboard = [
-        [
-            InlineKeyboardButton("📚 عرض الكتب والتعديل", callback_data=f"adm_view_bks_{class_id}"),
-            InlineKeyboardButton("🚀 رفع كتب جماعي", callback_data=f"adm_upl_bk_{class_id}")
-        ],
-        [
-            InlineKeyboardButton("✏️ تعديل اسم الصف", callback_data=f"adm_ren_cls_{class_id}"),
-            InlineKeyboardButton("🗑️ تفريغ جميع الكتب", callback_data=f"adm_del_all_bks_confirm_{class_id}")
-        ],
-        [InlineKeyboardButton("🗑️ حذف هذا الصف بالكامل", callback_data=f"adm_del_cls_confirm_{class_id}")],
-        [InlineKeyboardButton("🔙 قائمة الصفوف", callback_data=f"adm_view_cls_{stage_id}")]
-    ]
-    return InlineKeyboardMarkup(keyboard)
-
-
-def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: int) -> InlineKeyboardMarkup:
-    """عرض كتب الصف للآدمن."""
+def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: int, stage_id: int = 1) -> InlineKeyboardMarkup:
+    """عرض كتب الصف للآدمن مباشرة مع أدوات التحكم بالصف."""
     keyboard = []
     for b in books:
         keyboard.append([InlineKeyboardButton(f"📘 {b['title']}", callback_data=f"adm_book_card_{b['id']}")])
         
-    keyboard.append([InlineKeyboardButton("🚀 رفع كتب جديدة لهذا الصف", callback_data=f"adm_upl_bk_{class_id}")])
-    keyboard.append([InlineKeyboardButton("🔙 كارت الصف", callback_data=f"adm_class_card_{class_id}")])
+    keyboard.append([
+        InlineKeyboardButton("✏️ تعديل اسم الصف", callback_data=f"adm_ren_cls_{class_id}"),
+        InlineKeyboardButton("🚀 رفع كتب جديدة", callback_data=f"adm_upl_bk_{class_id}")
+    ])
+    keyboard.append([
+        InlineKeyboardButton("🗑️ حذف هذا الصف", callback_data=f"adm_del_cls_confirm_{class_id}"),
+        InlineKeyboardButton("🗑️ تفريغ الكتب", callback_data=f"adm_del_all_bks_confirm_{class_id}")
+    ])
+    keyboard.append([InlineKeyboardButton("🔙 قائمة الصفوف", callback_data=f"adm_view_cls_{stage_id}")])
     return InlineKeyboardMarkup(keyboard)
 
 
 def get_admin_single_book_card_keyboard(book_id: int, class_id: int) -> InlineKeyboardMarkup:
-    """كارت التحكم الخاص بكتاب واحد فقط (Single Book Card)."""
+    """كارت التحكم المباشر بكتاب مفرد."""
     keyboard = [
         [InlineKeyboardButton("📥 تحميل واستعراض الملف", callback_data=f"dl_book_{book_id}")],
         [
             InlineKeyboardButton("🗑️ حذف هذا الكتاب", callback_data=f"adm_del_bk_confirm_{book_id}"),
             InlineKeyboardButton("✏️ تعديل العنوان", callback_data=f"adm_ren_bk_{book_id}")
         ],
-        [InlineKeyboardButton("🔙 العودة لكتب الصف", callback_data=f"adm_view_bks_{class_id}")]
+        [InlineKeyboardButton("🔙 قائمة كتب الصف", callback_data=f"adm_view_bks_{class_id}")]
     ]
     return InlineKeyboardMarkup(keyboard)

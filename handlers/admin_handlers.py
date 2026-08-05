@@ -177,7 +177,7 @@ async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_
 
     try:
         stages = await repository.get_all_stages()
-        text = "🏛️ <b>إدارة المراحل والصفوف والمناهج</b>\nاختر المرحلة الدراسية لفتح كارت التحكم الخاص بها:"
+        text = "🏛️ <b>إدارة المراحل والصفوف والمناهج</b>\nاختر المرحلة الدراسية للتنقل المباشر:"
         reply_markup = inline.get_admin_stages_list_keyboard(stages)
     except Exception as e:
         logger.error(f"خطأ جلب المراحل: {e}")
@@ -185,39 +185,6 @@ async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_
         reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")]])
 
     await safe_edit_message(query, text, reply_markup=reply_markup)
-
-
-async def view_stage_card(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not await check_admin(update):
-        return
-
-    query = update.callback_query
-    if query:
-        try:
-            await query.answer()
-        except Exception:
-            pass
-
-    try:
-        stage_id = int(query.data.split("_")[-1])
-        stage = await repository.get_stage_by_id(stage_id)
-        classes = await repository.get_classes_by_stage(stage_id)
-        
-        if not stage:
-            await safe_edit_message(query, "❌ المرحلة غير موجودة.")
-            return
-
-        card_text = (
-            f"🏛️ <b>كارت إدارة مرحلة: {stage['name']}</b>\n\n"
-            f"🎓 <b>عدد الصفوف المضافة بها:</b> {len(classes)} صف دراسي\n\n"
-            "اختر الإجراء المطلوب لهذه المرحلة من الأزرار أدناه:"
-        )
-        reply_markup = inline.get_admin_stage_card_keyboard(stage_id)
-    except Exception as e:
-        card_text = f"❌ خطأ: {e}"
-        reply_markup = None
-
-    await safe_edit_message(query, card_text, reply_markup=reply_markup)
 
 
 async def start_add_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -261,7 +228,7 @@ async def confirm_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYP
     stage = await repository.get_stage_by_id(stage_id)
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف النهائي", callback_data=f"adm_del_stg_exec_{stage_id}")],
-        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_stage_card_{stage_id}")]
+        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_cls_{stage_id}")]
     ])
     await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف مرحلة: {stage['name'] if stage else ''}؟</b>\nسيتم حذف كافة الصفوف والكتب التابعة لها أيضاً!", reply_markup=keyboard)
 
@@ -280,7 +247,7 @@ async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     await safe_edit_message(query, "✅ تم حذف المرحلة وكافة محتوياتها بنجاح.", reply_markup=inline.get_admin_main_keyboard())
 
 
-# ==================== 2. المستوى الثاني: إدارة الصفوف (Class Level) ====================
+# ==================== 2. المستوى الثاني: إدارة الصفوف والكتب المباشرة ====================
 
 async def view_classes_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not await check_admin(update):
@@ -294,28 +261,7 @@ async def view_classes_list(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     stage_id = int(query.data.split("_")[-1])
     stage = await repository.get_stage_by_id(stage_id)
     classes = await repository.get_classes_by_stage(stage_id)
-    await safe_edit_message(query, f"🎓 <b>صفوف مرحلة: {stage['name'] if stage else ''}</b>\nاختر الصف لفتح كارت التحكم به:", reply_markup=inline.get_admin_classes_list_keyboard(classes, stage_id))
-
-
-async def view_class_card(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not await check_admin(update):
-        return
-    query = update.callback_query
-    if query:
-        try:
-            await query.answer()
-        except Exception:
-            pass
-    class_id = int(query.data.split("_")[-1])
-    cls = await repository.get_class_by_id(class_id)
-    books = await repository.get_books_by_class(class_id)
-    card_text = (
-        f"🎓 <b>كارت إدارة صف: {cls['name'] if cls else ''}</b>\n"
-        f"🏛️ <b>المرحلة:</b> {cls['stage_name'] if cls else ''}\n"
-        f"📚 <b>عدد الكتب المرفوعة به:</b> {len(books)} كتاب\n\n"
-        "اختر الإجراء المطلوب من الأزرار أدناه:"
-    )
-    await safe_edit_message(query, card_text, reply_markup=inline.get_admin_class_card_keyboard(class_id, cls['stage_id'] if cls else 1))
+    await safe_edit_message(query, f"🎓 <b>صفوف مرحلة: {stage['name'] if stage else ''}</b>\nاختر الصف لتصفح وإدارة كتبه مباشرة:", reply_markup=inline.get_admin_classes_list_keyboard(classes, stage_id))
 
 
 async def start_add_class_batch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -361,7 +307,7 @@ async def confirm_delete_class(update: Update, context: ContextTypes.DEFAULT_TYP
     cls = await repository.get_class_by_id(class_id)
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف النهائي", callback_data=f"adm_del_cls_exec_{class_id}")],
-        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_class_card_{class_id}")]
+        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_bks_{class_id}")]
     ])
     await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف صف: {cls['name'] if cls else ''}؟</b>\nسيتم حذف كافة الكتب التابعة له أيضاً!", reply_markup=keyboard)
 
@@ -411,10 +357,12 @@ async def view_class_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
     books = await repository.get_books_by_class(class_id)
+    stage_id = cls['stage_id'] if cls else 1
+    
     if not books:
-        await safe_edit_message(query, f"❌ لا توجد كتب مضافة في صف <b>{cls['name'] if cls else ''}</b> بعد.", reply_markup=inline.get_admin_class_card_keyboard(class_id, cls['stage_id'] if cls else 1))
+        await safe_edit_message(query, f"⚠️ لا توجد كتب مضافة في صف <b>{cls['name'] if cls else ''}</b> بعد.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
         return
-    await safe_edit_message(query, f"📚 <b>كتب صف: {cls['name'] if cls else ''}</b>\nاضغط على اسم الكتاب لفتح كارت التحكم به:", reply_markup=inline.get_admin_class_books_list_keyboard(books, class_id))
+    await safe_edit_message(query, f"📚 <b>كتب صف: {cls['name'] if cls else ''}</b>\nاختر الكتاب للتحكم به أو استخدم الأدوات أدناه:", reply_markup=inline.get_admin_class_books_list_keyboard(books, class_id, stage_id))
 
 
 async def view_single_book_card(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -486,7 +434,7 @@ async def exec_delete_single_book(update: Update, context: ContextTypes.DEFAULT_
     book = await repository.get_book_by_id(book_id)
     class_id = book['class_id'] if book else 1
     await repository.delete_book(book_id)
-    await safe_edit_message(query, "✅ تم حذف الكتاب نهائياً.", reply_markup=inline.get_admin_class_card_keyboard(class_id, 1))
+    await safe_edit_message(query, "✅ تم حذف الكتاب نهائياً.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, 1))
 
 
 async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -603,11 +551,9 @@ def register_admin_handlers(app):
     app.add_handler(CallbackQueryHandler(admin_stats_handler, pattern="^admin_stats$"))
     app.add_handler(CallbackQueryHandler(admin_manage_curriculum, pattern="^adm_manage_curriculum$"))
 
-    # التنقل المباشر في كروت الإدارة
-    app.add_handler(CallbackQueryHandler(view_stage_card, pattern="^adm_stage_card_\\d+$"))
-    app.add_handler(CallbackQueryHandler(view_classes_list, pattern="^adm_view_cls_\\d+$"))
-    app.add_handler(CallbackQueryHandler(view_class_card, pattern="^adm_class_card_\\d+$"))
-    app.add_handler(CallbackQueryHandler(view_class_books, pattern="^adm_view_bks_\\d+$"))
+    # التنقل المباشر والسريع
+    app.add_handler(CallbackQueryHandler(view_classes_list, pattern="^adm_(stage_card|view_cls)_\\d+$"))
+    app.add_handler(CallbackQueryHandler(view_class_books, pattern="^adm_(class_card|view_bks)_\\d+$"))
     app.add_handler(CallbackQueryHandler(view_single_book_card, pattern="^adm_book_card_\\d+$"))
 
     # الحذف المباشر
