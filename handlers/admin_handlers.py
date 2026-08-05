@@ -197,7 +197,7 @@ async def start_add_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         except Exception:
             pass
     context.user_data['admin_action'] = 'add_stage'
-    await safe_edit_message(query, "➕ <b>إضافة مرحلة جديدة</b>\nأرسل اسم المرحلة الجديدة في رسالة (مثال: المرحلة الثانوية):")
+    await safe_edit_message(query, "❇️ <b>إضافة مرحلة جديدة</b>\nأرسل اسم المرحلة الجديدة في رسالة (مثال: المرحلة الثانوية):")
 
 
 async def start_rename_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -276,7 +276,7 @@ async def start_add_class_batch(update: Update, context: ContextTypes.DEFAULT_TY
     stage_id = int(query.data.split("_")[-1])
     context.user_data['admin_action'] = f'add_class_{stage_id}'
     stage = await repository.get_stage_by_id(stage_id)
-    await safe_edit_message(query, f"➕ <b>إضافة صف جديد لمرحلة: {stage['name'] if stage else ''}</b>\nأرسل اسم الصف الجديد في رسالة:")
+    await safe_edit_message(query, f"❇️ <b>إضافة صف جديد لمرحلة: {stage['name'] if stage else ''}</b>\nأرسل اسم الصف الجديد في رسالة:")
 
 
 async def start_rename_class(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
