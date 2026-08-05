@@ -34,25 +34,48 @@ def get_formatted_db_url(url: str) -> str:
     return formatted
 
 
+class AsyncQuery:
+    """كائن استعلام متوافق مع async with و await في نفس الوقت."""
+    def __init__(self, conn, sql: str, params: tuple = ()):
+        self.conn = conn
+        self.sql = sql
+        self.params = params
+        self._wrapper = None
+
+    async def _execute(self):
+        if self._wrapper is None:
+            pg_sql = self.sql.replace("?", "%s")
+            pg_sql = re.sub(r"INSERT\s+OR\s+IGNORE\s+INTO", "INSERT INTO", pg_sql, flags=re.IGNORECASE)
+            if "INSERT INTO" in pg_sql.upper() and "ON CONFLICT" not in pg_sql.upper() and "IGNORE" in self.sql.upper():
+                pg_sql = pg_sql.rstrip(";") + " ON CONFLICT DO NOTHING;"
+
+            def _run():
+                cur = self.conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute(pg_sql, self.params)
+                return cur
+
+            cursor = await asyncio.to_thread(_run)
+            self._wrapper = SyncCursorWrapper(cursor)
+        return self._wrapper
+
+    def __await__(self):
+        return self._execute().__await__()
+
+    async def __aenter__(self):
+        return await self._execute()
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class SyncToAsyncPostgresWrapper:
     """مغلف تزامني متوافق لـ psycopg2 ويعمل مع asyncio لسيرفرات Vercel."""
 
     def __init__(self, conn):
         self.conn = conn
 
-    async def execute(self, sql: str, params: tuple = ()):
-        pg_sql = sql.replace("?", "%s")
-        pg_sql = re.sub(r"INSERT\s+OR\s+IGNORE\s+INTO", "INSERT INTO", pg_sql, flags=re.IGNORECASE)
-        if "INSERT INTO" in pg_sql.upper() and "ON CONFLICT" not in pg_sql.upper() and "IGNORE" in sql.upper():
-            pg_sql = pg_sql.rstrip(";") + " ON CONFLICT DO NOTHING;"
-
-        def _run():
-            cur = self.conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute(pg_sql, params)
-            return cur
-
-        cursor = await asyncio.to_thread(_run)
-        return SyncCursorWrapper(cursor)
+    def execute(self, sql: str, params: tuple = ()):
+        return AsyncQuery(self.conn, sql, params)
 
     async def commit(self):
         await asyncio.to_thread(self.conn.commit)
@@ -80,10 +103,20 @@ class SyncCursorWrapper:
         return None
 
     async def fetchone(self):
-        return await asyncio.to_thread(self.cursor.fetchone)
+        def _fetch():
+            try:
+                return self.cursor.fetchone()
+            except Exception:
+                return None
+        return await asyncio.to_thread(_fetch)
 
     async def fetchall(self):
-        return await asyncio.to_thread(self.cursor.fetchall)
+        def _fetch_all():
+            try:
+                return self.cursor.fetchall()
+            except Exception:
+                return []
+        return await asyncio.to_thread(_fetch_all)
 
     async def __aenter__(self):
         return self
