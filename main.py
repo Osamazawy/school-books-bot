@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from telegram.ext import ApplicationBuilder, Defaults
 from telegram.constants import ParseMode
+from telegram.request import HTTPXRequest
 
 from config import BOT_TOKEN
 from utils.logger import logger
@@ -28,28 +29,29 @@ def main():
 
     logger.info("جاري إعداد وتشغيل بوت المناهج والكتب الدراسية...")
 
-    # تعيين افتراضيات البوت (مثل نمط التنسيق HTML)
+    # زيادة مبيعات المهلة (Timeouts) لضمان عدم الاتقطاع على الشبكات الضعيفة
+    request = HTTPXRequest(
+        connect_timeout=30.0,
+        read_timeout=30.0,
+        write_timeout=30.0,
+        pool_timeout=30.0
+    )
+
     defaults = Defaults(parse_mode=ParseMode.HTML)
 
-    # إنشاء تطبيق البوت باستخدام ApplicationBuilder
     application = (
         ApplicationBuilder()
         .token(BOT_TOKEN)
+        .request(request)
         .defaults(defaults)
         .post_init(post_init)
         .build()
     )
 
-    # 1. تسجيل موجه البحث أولاً (ConversationHandler)
     application.add_handler(get_search_handler())
-
-    # 2. تسجيل موجهات لوحة تحكم المشرفين
     register_admin_handlers(application)
-
-    # 3. تسجيل موجهات المستخدم والتصفح العادي
     register_user_handlers(application)
 
-    # بدء الاستماع للرسائل (Polling)
     logger.info("البوت يعمل الآن بصورة ممتازة. (Press Ctrl+C to stop)")
     application.run_polling(drop_pending_updates=True)
 

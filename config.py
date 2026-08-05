@@ -12,8 +12,13 @@ ADMIN_IDS: List[int] = [
     if admin_id.strip().isdigit()
 ]
 
-# مسار قاعدة البيانات SQLite
+# مسار أو رابط قاعدة البيانات (SQLite كبديل محلي، أو DATABASE_URL لـ Supabase PostgreSQL)
 DB_PATH: str = os.getenv("DB_PATH", "school_books.db")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+
+# رابط الـ Webhook الخاص بـ Vercel
+WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
 
 # مستوى التسجيل Logging
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+
