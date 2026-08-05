@@ -458,7 +458,12 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         stage_name = update.message.text.strip() if update.message and update.message.text else ""
         if stage_name:
             await repository.add_stage(stage_name)
-            await update.message.reply_text(f"✅ تم إضافة مرحلة: <b>{stage_name}</b> بنجاح.", parse_mode="HTML", reply_markup=inline.get_admin_main_keyboard())
+            stages = await repository.get_all_stages()
+            await update.message.reply_text(
+                f"✅ تم إضافة مرحلة: <b>{stage_name}</b> بنجاح.",
+                parse_mode="HTML",
+                reply_markup=inline.get_admin_stages_list_keyboard(stages)
+            )
         else:
             await update.message.reply_text("❌ يرجى كتابة اسم مرحلة صحيح.")
         return
@@ -468,7 +473,12 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         new_name = update.message.text.strip() if update.message and update.message.text else ""
         if new_name:
             await repository.update_stage_name(stage_id, new_name)
-            await update.message.reply_text(f"✅ تم تعديل اسم المرحلة إلى: <b>{new_name}</b>.", parse_mode="HTML", reply_markup=inline.get_admin_main_keyboard())
+            stages = await repository.get_all_stages()
+            await update.message.reply_text(
+                f"✅ تم تعديل اسم المرحلة إلى: <b>{new_name}</b>.",
+                parse_mode="HTML",
+                reply_markup=inline.get_admin_stages_list_keyboard(stages)
+            )
         return
 
     if action.startswith('add_class_'):
@@ -476,7 +486,12 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         class_name = update.message.text.strip() if update.message and update.message.text else ""
         if class_name:
             await repository.add_class(stage_id, class_name)
-            await update.message.reply_text(f"✅ تم إضافة صف: <b>{class_name}</b> بنجاح.", parse_mode="HTML", reply_markup=inline.get_admin_main_keyboard())
+            classes = await repository.get_classes_by_stage(stage_id)
+            await update.message.reply_text(
+                f"✅ تم إضافة صف: <b>{class_name}</b> بنجاح.",
+                parse_mode="HTML",
+                reply_markup=inline.get_admin_classes_list_keyboard(classes, stage_id)
+            )
         return
 
     if action.startswith('rename_class_'):
@@ -484,7 +499,14 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         new_name = update.message.text.strip() if update.message and update.message.text else ""
         if new_name:
             await repository.update_class_name(class_id, new_name)
-            await update.message.reply_text(f"✅ تم تعديل اسم الصف إلى: <b>{new_name}</b>.", parse_mode="HTML", reply_markup=inline.get_admin_main_keyboard())
+            cls = await repository.get_class_by_id(class_id)
+            stage_id = cls['stage_id'] if cls else 1
+            classes = await repository.get_classes_by_stage(stage_id)
+            await update.message.reply_text(
+                f"✅ تم تعديل اسم الصف إلى: <b>{new_name}</b>.",
+                parse_mode="HTML",
+                reply_markup=inline.get_admin_classes_list_keyboard(classes, stage_id)
+            )
         return
 
     if action.startswith('upload_book_'):
@@ -495,8 +517,8 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
             file_id = file_obj.file_id
             title = file_obj.file_name or msg.caption or "كتاب دراسي"
             await repository.add_book_for_class(class_id, title, "", file_id)
-            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 كارت الصف", callback_data=f"adm_class_card_{class_id}")]])
-            await msg.reply_text(f"✅ تم رفع كتاب: <b>{title}</b> بنجاح!\n<i>يمكنك إرسال باقي الكتب أو الضغط على كارت الصف عند الانتهاء.</i>", parse_mode="HTML", reply_markup=keyboard)
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("↩️  قائمة كتب الصف", callback_data=f"adm_view_bks_{class_id}")]])
+            await msg.reply_text(f"✅ تم رفع كتاب: <b>{title}</b> بنجاح!\n<i>يمكنك إرسال باقي الكتب أو الضغط على قائمة كتب الصف عند الانتهاء.</i>", parse_mode="HTML", reply_markup=keyboard)
         else:
             await msg.reply_text("⚠️ يرجى إرسال ملف الـ PDF كملف مرفق.")
         return
@@ -506,7 +528,14 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
         new_title = update.message.text.strip() if update.message and update.message.text else ""
         if new_title:
             await repository.update_book_title(book_id, new_title)
-            await update.message.reply_text(f"✅ تم تعديل عنوان الكتاب إلى: <b>{new_title}</b>.", parse_mode="HTML", reply_markup=inline.get_admin_main_keyboard())
+            book = await repository.get_book_by_id(book_id)
+            class_id = book['class_id'] if book else 1
+            books = await repository.get_books_by_class(class_id)
+            await update.message.reply_text(
+                f"✅ تم تعديل عنوان الكتاب إلى: <b>{new_title}</b>.",
+                parse_mode="HTML",
+                reply_markup=inline.get_admin_class_books_list_keyboard(books, class_id)
+            )
         return
 
 
