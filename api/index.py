@@ -68,7 +68,7 @@ async def webhook(request: Request):
         await ensure_bot_initialized()
         update = Update.de_json(data, bot_app.bot)
         await bot_app.process_update(update)
-        await asyncio.sleep(0.6)
+        await asyncio.sleep(1.2)
         return {"status": "ok"}
     except Exception as e:
         print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)

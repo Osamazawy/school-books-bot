@@ -10,15 +10,10 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not user:
         return
 
-    try:
-        await repository.add_or_update_user(telegram_id=user.id, full_name=user.full_name or "بدون اسم")
-    except Exception as e:
-        logger.error(f"خطأ أثناء حفظ/تحديث المستخدم {user.id}: {e}")
-
     is_admin = user.id in ADMIN_IDS
     welcome_text = (
         f"مرحباً بك يا <b>{user.first_name}</b> في بوت المناهج والكتب الدراسية 📚✨\n\n"
-        "اختر **المراحل الدراسية** للتنقل بين الصفوف وتحميل المناهج بصيغة PDF فوراً."
+        "اختر <b>المراحل الدراسية</b> للتنقل بين الصفوف وتحميل المناهج بصيغة PDF فوراً."
     )
     
     if update.message:
@@ -34,6 +29,11 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             parse_mode="HTML",
             reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
         )
+
+    try:
+        await repository.add_or_update_user(telegram_id=user.id, full_name=user.full_name or "بدون اسم")
+    except Exception as e:
+        logger.error(f"خطأ غير مؤثر أثناء حفظ المستخدم {user.id}: {e}")
 
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
