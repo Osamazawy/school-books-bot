@@ -603,14 +603,14 @@ def register_admin_handlers(app):
     app.add_handler(CallbackQueryHandler(admin_stats_handler, pattern="^admin_stats$"))
     app.add_handler(CallbackQueryHandler(admin_manage_curriculum, pattern="^adm_manage_curriculum$"))
 
-    # التنقل في كروت الإدارة
+    # التنقل المباشر في كروت الإدارة
     app.add_handler(CallbackQueryHandler(view_stage_card, pattern="^adm_stage_card_\\d+$"))
     app.add_handler(CallbackQueryHandler(view_classes_list, pattern="^adm_view_cls_\\d+$"))
     app.add_handler(CallbackQueryHandler(view_class_card, pattern="^adm_class_card_\\d+$"))
     app.add_handler(CallbackQueryHandler(view_class_books, pattern="^adm_view_bks_\\d+$"))
     app.add_handler(CallbackQueryHandler(view_single_book_card, pattern="^adm_book_card_\\d+$"))
 
-    # الحذف المباشر للـ Stage والـ Class والـ Book
+    # الحذف المباشر
     app.add_handler(CallbackQueryHandler(confirm_delete_stage, pattern="^adm_del_stg_confirm_\\d+$"))
     app.add_handler(CallbackQueryHandler(exec_delete_stage, pattern="^adm_del_stg_exec_\\d+$"))
     app.add_handler(CallbackQueryHandler(confirm_delete_class, pattern="^adm_del_cls_confirm_\\d+$"))
@@ -618,93 +618,11 @@ def register_admin_handlers(app):
     app.add_handler(CallbackQueryHandler(confirm_delete_single_book, pattern="^adm_del_bk_confirm_\\d+$"))
     app.add_handler(CallbackQueryHandler(exec_delete_single_book, pattern="^adm_del_bk_exec_\\d+$"))
 
-    # Conversation الإذاعة
-    broadcast_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_broadcast, pattern="^admin_broadcast$")],
-        states={
-            WAITING_BROADCAST: [MessageHandler(filters.ALL & ~filters.COMMAND, send_broadcast)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel_admin_action), CallbackQueryHandler(cancel_admin_action, pattern="^admin_panel$")],
-        allow_reentry=True,
-        per_message=False
-    )
-
-    # Conversation إضافة مرحلة
-    add_stage_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_add_stage, pattern="^adm_add_stage_new$")],
-        states={
-            ADD_STAGE_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_add_stage)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel_admin_action), CallbackQueryHandler(cancel_admin_action, pattern="^admin_panel$")],
-        allow_reentry=True,
-        per_message=False
-    )
-
-    # Conversation تعديل مرحلة
-    ren_stage_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_rename_stage, pattern="^adm_ren_stg_\\d+$")],
-        states={
-            REN_STAGE_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_rename_stage)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel_admin_action), CallbackQueryHandler(cancel_admin_action, pattern="^admin_panel$")],
-        allow_reentry=True,
-        per_message=False
-    )
-
-    # Conversation إضافة صفوف متتالية
-    add_class_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_add_class_batch, pattern="^adm_add_cls_batch_\\d+$")],
-        states={
-            ADD_CLASS_BATCH: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_add_class_batch),
-                CallbackQueryHandler(admin_manage_curriculum, pattern="^adm_manage_curriculum$")
-            ]
-        },
-        fallbacks=[CommandHandler("cancel", cancel_admin_action), CallbackQueryHandler(cancel_admin_action, pattern="^admin_panel$")],
-        allow_reentry=True,
-        per_message=False
-    )
-
-    # Conversation تعديل صف
-    ren_class_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_rename_class, pattern="^adm_ren_cls_\\d+$")],
-        states={
-            REN_CLASS_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_rename_class)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel_admin_action), CallbackQueryHandler(cancel_admin_action, pattern="^admin_panel$")],
-        allow_reentry=True,
-        per_message=False
-    )
-
-    # Conversation الرفع الجماعي المباشر للصف
-    upl_book_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_upload_books, pattern="^adm_upl_bk_\\d+$")],
-        states={
-            UPL_BOOK_BATCH: [
-                MessageHandler(filters.Document.ALL, save_upload_book_file),
-                CallbackQueryHandler(view_class_card, pattern="^adm_class_card_\\d+$")
-            ]
-        },
-        fallbacks=[CommandHandler("cancel", cancel_admin_action), CallbackQueryHandler(cancel_admin_action, pattern="^admin_panel$")],
-        allow_reentry=True,
-        per_message=False
-    )
-
-    # Conversation تعديل اسم كتاب مفرد
-    ren_book_conv = ConversationHandler(
-        entry_points=[CallbackQueryHandler(start_rename_book, pattern="^adm_ren_bk_\\d+$")],
-        states={
-            REN_BOOK_TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_rename_book)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel_admin_action), CallbackQueryHandler(cancel_admin_action, pattern="^admin_panel$")],
-        allow_reentry=True,
-        per_message=False
-    )
-
-    app.add_handler(broadcast_conv)
-    app.add_handler(add_stage_conv)
-    app.add_handler(ren_stage_conv)
-    app.add_handler(add_class_conv)
-    app.add_handler(ren_class_conv)
-    app.add_handler(upl_book_conv)
-    app.add_handler(ren_book_conv)
+    # ربط الأزرار المباشرة بدون اعتمادات الذاكرة المؤقتة
+    app.add_handler(CallbackQueryHandler(start_broadcast, pattern="^admin_broadcast$"))
+    app.add_handler(CallbackQueryHandler(start_add_stage, pattern="^adm_add_stage_new$"))
+    app.add_handler(CallbackQueryHandler(start_rename_stage, pattern="^adm_ren_stg_\\d+$"))
+    app.add_handler(CallbackQueryHandler(start_add_class_batch, pattern="^adm_add_cls_batch_\\d+$"))
+    app.add_handler(CallbackQueryHandler(start_rename_class, pattern="^adm_ren_cls_\\d+$"))
+    app.add_handler(CallbackQueryHandler(start_upload_books, pattern="^adm_upl_bk_\\d+$"))
+    app.add_handler(CallbackQueryHandler(start_rename_book, pattern="^adm_ren_bk_\\d+$"))
