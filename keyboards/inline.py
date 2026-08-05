@@ -127,8 +127,9 @@ def get_admin_class_card_keyboard(class_id: int, stage_id: int) -> InlineKeyboar
     keyboard = [
         [InlineKeyboardButton("🚀 رفع كتب جماعي لهذا الصف", callback_data=f"adm_upl_bk_{class_id}")],
         [InlineKeyboardButton("📚 عرض كتب هذا الصف والتعديل عليها", callback_data=f"adm_view_bks_{class_id}")],
+        [InlineKeyboardButton("🗑️ تفريغ وحذف جميع كتب هذا الصف", callback_data=f"adm_del_all_bks_confirm_{class_id}")],
         [
-            InlineKeyboardButton("🗑️ حذف هذا الصف", callback_data=f"adm_del_cls_confirm_{class_id}"),
+            InlineKeyboardButton("🗑️ حذف هذا الصف بالكامل", callback_data=f"adm_del_cls_confirm_{class_id}"),
             InlineKeyboardButton("✏️ تعديل اسم الصف", callback_data=f"adm_ren_cls_{class_id}")
         ],
         [InlineKeyboardButton("🔙 قائمة الصفوف", callback_data=f"adm_view_cls_{stage_id}")]

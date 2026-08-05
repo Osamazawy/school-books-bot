@@ -220,6 +220,13 @@ async def delete_book(book_id: int) -> bool:
         await db.commit()
         return cursor.rowcount > 0
 
+async def delete_all_books_by_class(class_id: int) -> int:
+    """حذف جميع الكتب التابعة لصف دراسي محدد دفعة واحدة."""
+    async with get_db_connection() as db:
+        cursor = await db.execute("DELETE FROM books WHERE class_id = ?;", (class_id,))
+        await db.commit()
+        return cursor.rowcount if cursor and cursor.rowcount >= 0 else 0
+
 async def get_books_count() -> int:
     async with get_db_connection() as db:
         async with db.execute("SELECT COUNT(*) FROM books;") as cursor:
