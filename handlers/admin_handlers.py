@@ -39,57 +39,6 @@ async def safe_edit_message(query, text: str, reply_markup=None, parse_mode: str
             logger.error(f"خطأ أثناء تعديل الرسالة: {e}")
 
 
-async def countdown_delay(query, context: ContextTypes.DEFAULT_TYPE, title_text: str, duration: int = 3) -> bool:
-    """إظهار عداد تنازلي تفاعلي حقيقي مع زر تراجع مباشر وإلغاء مفاجئ."""
-    if not query or not query.message:
-        return True
-    
-    msg_id = query.message.message_id
-    cancel_key = f"cancel_del_{msg_id}"
-    context.user_data[cancel_key] = False
-
-    cancel_keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🛑  إلغاء والتراجع عن الحذف الآن  🛑", callback_data=f"adm_cancel_op_{msg_id}")]
-    ])
-
-    for i in range(duration, 0, -1):
-        if context.user_data.get(cancel_key):
-            context.user_data.pop(cancel_key, None)
-            return False
-
-        try:
-            await query.edit_message_text(
-                f"⏳ <b>{title_text}</b>\n\n"
-                f"سيتم تنفيذ إجراء الحذف خلال <b>{i}</b> ثوانٍ...\n\n"
-                f"<i>اضغط على زر التراجع أدناه فوراً لإلغاء الحذف!</i>",
-                parse_mode="HTML",
-                reply_markup=cancel_keyboard
-            )
-        except Exception:
-            pass
-        
-        for _ in range(10):
-            await asyncio.sleep(0.1)
-            if context.user_data.get(cancel_key):
-                context.user_data.pop(cancel_key, None)
-                return False
-
-    context.user_data.pop(cancel_key, None)
-    return True
-
-
-async def cancel_operation_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """إلغاء العملية فوراً عند الضغط على زر التراجع أثناء العد التنازلي."""
-    query = update.callback_query
-    if query and query.message:
-        msg_id = int(query.data.split("_")[-1])
-        context.user_data[f"cancel_del_{msg_id}"] = True
-        try:
-            await query.answer("🛑 تم التراجع عن العملية وإلغاء الحذف!")
-        except Exception:
-            pass
-
-
 # ==================== لوحة التحكم الرئيسية والإحصائيات ====================
 
 async def admin_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -294,10 +243,6 @@ async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         except Exception:
             pass
     stage_id = int(query.data.split("_")[-1])
-    stage = await repository.get_stage_by_id(stage_id)
-    if not await countdown_delay(query, context, f"حذف مرحلة: {stage['name'] if stage else ''}", duration=3):
-        await safe_edit_message(query, "🛡️ <b>تم التراجع وإلغاء عملية الحذف بنجاح.</b>", reply_markup=inline.get_admin_main_keyboard())
-        return
     await repository.delete_stage(stage_id)
     await safe_edit_message(query, "✅ تم حذف المرحلة وكافة محتوياتها بنجاح.", reply_markup=inline.get_admin_main_keyboard())
 
@@ -379,9 +324,6 @@ async def exec_delete_class(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
     stage_id = cls['stage_id'] if cls else 1
-    if not await countdown_delay(query, context, f"حذف صف: {cls['name'] if cls else ''} وكافة كتبه", duration=3):
-        await safe_edit_message(query, "🛡️ <b>تم التراجع وإلغاء عملية الحذف بنجاح.</b>", reply_markup=inline.get_admin_classes_list_keyboard([], stage_id))
-        return
     await repository.delete_class(class_id)
     await safe_edit_message(query, "✅ تم حذف الصف بنجاح.", reply_markup=inline.get_admin_classes_list_keyboard([], stage_id))
 
@@ -491,9 +433,6 @@ async def exec_delete_single_book(update: Update, context: ContextTypes.DEFAULT_
     book_id = int(query.data.split("_")[-1])
     book = await repository.get_book_by_id(book_id)
     class_id = book['class_id'] if book else 1
-    if not await countdown_delay(query, context, f"حذف كتاب: {book['title'] if book else ''}", duration=3):
-        await safe_edit_message(query, "🛡️ <b>تم التراجع وإلغاء عملية الحذف بنجاح.</b>", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, 1))
-        return
     await repository.delete_book(book_id)
     await safe_edit_message(query, "✅ تم حذف الكتاب نهائياً.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, 1))
 
@@ -602,11 +541,8 @@ async def exec_delete_all_class_books(update: Update, context: ContextTypes.DEFA
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
     stage_id = cls['stage_id'] if cls else 1
-    if not await countdown_delay(query, context, f"تفريغ كافة كتب صف: {cls['name'] if cls else ''}", duration=3):
-        await safe_edit_message(query, "🛡️ <b>تم التراجع وإلغاء عملية الحذف بنجاح.</b>", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
-        return
     count = await repository.delete_all_books_by_class(class_id)
-    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
+    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_card_keyboard(class_id, stage_id))
 
 
 def register_admin_handlers(app):
@@ -621,7 +557,6 @@ def register_admin_handlers(app):
     app.add_handler(CallbackQueryHandler(view_single_book_card, pattern="^adm_book_card_\\d+$"))
 
     # الحذف المباشر
-    app.add_handler(CallbackQueryHandler(cancel_operation_handler, pattern="^adm_cancel_op_\\d+$"))
     app.add_handler(CallbackQueryHandler(confirm_delete_stage, pattern="^adm_del_stg_confirm_\\d+$"))
     app.add_handler(CallbackQueryHandler(exec_delete_stage, pattern="^adm_del_stg_exec_\\d+$"))
     app.add_handler(CallbackQueryHandler(confirm_delete_class, pattern="^adm_del_cls_confirm_\\d+$"))

@@ -49,7 +49,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    await query.answer("🏛️ جاري عرض المراحل...")
     
     stages = await repository.get_all_stages()
     if not stages:
@@ -69,7 +69,7 @@ async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    await query.answer("🎓 جاري عرض الصفوف...")
     
     stage_id = int(query.data.split("_")[-1])
     stage = await repository.get_stage_by_id(stage_id)
@@ -94,7 +94,7 @@ async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 async def list_books_for_class_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """عرض الكتب التابعة للصف مباشرة عند الاختيار."""
     query = update.callback_query
-    await query.answer()
+    await query.answer("📘 جاري جلب الكتب...")
     
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
@@ -119,7 +119,7 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
 
 async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    await query.answer("📖 جاري تجهيز صفحة الكتاب...")
     
     book_id = int(query.data.split("_")[-1])
     book = await repository.get_book_by_id(book_id)
@@ -143,7 +143,7 @@ async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer("جاري إرسال الملف... ⏳")
+    await query.answer("📥 جاري تحضير ملف الـ PDF...")
     
     book_id = int(query.data.split("_")[-1])
     book = await repository.get_book_by_id(book_id)
