@@ -55,12 +55,13 @@ async def ensure_bot_initialized():
 @app.get("/{full_path:path}")
 @app.get("/")
 async def handle_get_requests(request: Request, full_path: str = ""):
-    headers_str = str(dict(request.headers)).lower()
+    headers_dict = dict(request.headers)
+    headers_str = str(headers_dict).lower()
     raw_path = str(request.url.path).lower()
     query_str = str(request.query_params).lower()
     combined = f"{full_path} {raw_path} {query_str} {headers_str}".lower()
     
-    if "set_webhook" in combined:
+    if "set_webhook" in combined or "set_webhook" in request.query_params:
         clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
         if not clean_webhook_url:
             return {"error": "WEBHOOK_URL environment variable is missing"}
@@ -70,12 +71,18 @@ async def handle_get_requests(request: Request, full_path: str = ""):
         success = await bot_app.bot.set_webhook(url=target_url)
         return {"success": success, "webhook_url": target_url}
 
-    return {"status": "ok", "message": "Bot is active and running on Vercel Serverless!"}
+    return {
+        "status": "ok",
+        "message": "Bot is active and running on Vercel Serverless!",
+        "debug_headers": headers_dict,
+        "debug_url": str(request.url)
+    }
 
 @app.post("/{full_path:path}")
 @app.post("/")
 async def handle_post_requests(request: Request, full_path: str = ""):
-    headers_str = str(dict(request.headers)).lower()
+    headers_dict = dict(request.headers)
+    headers_str = str(headers_dict).lower()
     raw_path = str(request.url.path).lower()
     combined = f"{full_path} {raw_path} {headers_str}".lower()
     
