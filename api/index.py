@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 import traceback
 from fastapi import FastAPI, Request
 from telegram import Update
@@ -15,6 +16,7 @@ from handlers.search_handlers import get_search_handler
 from handlers.admin_handlers import register_admin_handlers
 
 app = FastAPI()
+bot_initialized = False
 
 def create_telegram_app():
     defaults = Defaults(parse_mode=ParseMode.HTML)
@@ -31,21 +33,30 @@ def create_telegram_app():
 
 bot_app = create_telegram_app()
 
+async def ensure_bot_initialized():
+    global bot_initialized
+    if not bot_initialized:
+        await bot_app.initialize()
+        await bot_app.start()
+        bot_initialized = True
+
 async def execute_set_webhook():
     if not WEBHOOK_URL:
         return {"error": "WEBHOOK_URL environment variable is missing"}
     
+    await ensure_bot_initialized()
     target_url = f"{WEBHOOK_URL.rstrip('/')}/api/webhook"
-    async with bot_app:
-        success = await bot_app.bot.set_webhook(url=target_url)
+    success = await bot_app.bot.set_webhook(url=target_url)
     return {"success": success, "webhook_url": target_url}
 
 async def execute_webhook(request: Request):
     try:
         data = await request.json()
-        async with bot_app:
-            update = Update.de_json(data, bot_app.bot)
-            await bot_app.process_update(update)
+        await ensure_bot_initialized()
+        update = Update.de_json(data, bot_app.bot)
+        await bot_app.process_update(update)
+        # انتظار إنهاء مهام الخلفية قبل أن ينتهي الـ Serverless Execution
+        await asyncio.sleep(0.6)
         return {"status": "ok"}
     except Exception as e:
         print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
