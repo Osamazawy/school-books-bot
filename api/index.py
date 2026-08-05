@@ -40,7 +40,17 @@ async def ensure_bot_initialized():
         await bot_app.start()
         bot_initialized = True
 
-async def execute_set_webhook():
+@app.get("/")
+@app.get("/api")
+@app.get("/api/index")
+@app.get("/api/index.py")
+def root():
+    return {"status": "ok", "message": "Bot is active and running on Vercel Serverless!"}
+
+@app.get("/set_webhook")
+@app.get("/api/set_webhook")
+@app.get("/api/index.py/set_webhook")
+async def set_webhook():
     if not WEBHOOK_URL:
         return {"error": "WEBHOOK_URL environment variable is missing"}
     
@@ -49,34 +59,17 @@ async def execute_set_webhook():
     success = await bot_app.bot.set_webhook(url=target_url)
     return {"success": success, "webhook_url": target_url}
 
-async def execute_webhook(request: Request):
+@app.post("/webhook")
+@app.post("/api/webhook")
+@app.post("/api/index.py/webhook")
+async def webhook(request: Request):
     try:
         data = await request.json()
         await ensure_bot_initialized()
         update = Update.de_json(data, bot_app.bot)
         await bot_app.process_update(update)
-        # انتظار إنهاء مهام الخلفية قبل أن ينتهي الـ Serverless Execution
         await asyncio.sleep(0.6)
         return {"status": "ok"}
     except Exception as e:
         print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
         return {"status": "error", "message": str(e)}
-
-@app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
-async def handle_all_routes(request: Request, full_path: str = ""):
-    query_path = request.query_params.get("path", "").lower()
-    raw_url = str(request.url).lower()
-    raw_path = str(request.url.path).lower()
-    combined = f"{full_path} {raw_url} {raw_path} {query_path}".lower()
-    
-    if "set_webhook" in combined or query_path == "set_webhook":
-        return await execute_set_webhook()
-    
-    if ("webhook" in combined or query_path == "webhook") and request.method == "POST":
-        return await execute_webhook(request)
-    
-    return {
-        "status": "ok",
-        "message": "Bot is active and running on Vercel Serverless!",
-        "path_detected": query_path or full_path
-    }
