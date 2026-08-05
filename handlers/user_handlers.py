@@ -35,41 +35,57 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     except Exception as e:
         logger.error(f"خطأ غير مؤثر أثناء حفظ المستخدم {user.id}: {e}")
 
+async def safe_edit_message(query, text: str, reply_markup=None):
+    if not query:
+        return
+    try:
+        await query.edit_message_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
+    except Exception as e:
+        if "Message is not modified" not in str(e):
+            try:
+                await query.message.reply_text(text=text, parse_mode="HTML", reply_markup=reply_markup)
+            except Exception:
+                pass
+
 async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    if query:
+        await query.answer()
     user = update.effective_user
     is_admin = user.id in ADMIN_IDS if user else False
     
-    await query.edit_message_text(
+    await safe_edit_message(
+        query,
         "📚 <b>القائمة الرئيسية</b>\nيرجى اختيار القسم المطلوب من الأزرار أدناه:",
-        parse_mode="HTML",
         reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
     )
 
 async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    if query:
+        await query.answer()
     
     stages = await repository.get_all_stages()
     if not stages:
         user = update.effective_user
         is_admin = user.id in ADMIN_IDS if user else False
-        await query.edit_message_text(
+        await safe_edit_message(
+            query,
             "⚠️ لا توجد مراحل دراسية مضافة حالياً في قاعدة البيانات.",
             reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
         )
         return
 
-    await query.edit_message_text(
+    await safe_edit_message(
+        query,
         "🏛️ <b>المراحل الدراسية</b>\nاختر المرحلة الدراسية لعرض صفوفها المتاحة:",
-        parse_mode="HTML",
         reply_markup=inline.get_stages_keyboard(stages)
     )
 
 async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer()
+    if query:
+        await query.answer()
     
     stage_id = int(query.data.split("_")[-1])
     stage = await repository.get_stage_by_id(stage_id)
@@ -78,23 +94,24 @@ async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     stage_name = stage['name'] if stage else "المرحلة"
     
     if not classes:
-        await query.edit_message_text(
+        await safe_edit_message(
+            query,
             f"⚠️ لا توجد صفوف مضافة لمرحلة <b>{stage_name}</b> حتى الآن.",
-            parse_mode="HTML",
             reply_markup=inline.get_classes_keyboard([], stage_id)
         )
         return
 
-    await query.edit_message_text(
+    await safe_edit_message(
+        query,
         f"🎓 <b>صفوف مرحلة: {stage_name}</b>\nاختر الصف الدراسي لعرض كتبه ومناهجه:",
-        parse_mode="HTML",
         reply_markup=inline.get_classes_keyboard(classes, stage_id)
     )
 
 async def list_books_for_class_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """عرض الكتب التابعة للصف مباشرة عند الاختيار."""
     query = update.callback_query
-    await query.answer()
+    if query:
+        await query.answer()
     
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
@@ -104,16 +121,16 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
     stage_id = cls['stage_id'] if cls else 1
 
     if not books:
-        await query.edit_message_text(
+        await safe_edit_message(
+            query,
             f"⚠️ لا توجد كتب مضافة لـ <b>{class_name}</b> حتى الآن.",
-            parse_mode="HTML",
             reply_markup=inline.get_books_keyboard([], stage_id)
         )
         return
 
-    await query.edit_message_text(
+    await safe_edit_message(
+        query,
         f"📘 <b>كتب ومناهج: {class_name}</b>\nاختر الكتاب المطلوب لتحميله مباشرة:",
-        parse_mode="HTML",
         reply_markup=inline.get_books_keyboard(books, stage_id)
     )
 

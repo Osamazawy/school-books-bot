@@ -542,7 +542,7 @@ async def exec_delete_all_class_books(update: Update, context: ContextTypes.DEFA
     cls = await repository.get_class_by_id(class_id)
     stage_id = cls['stage_id'] if cls else 1
     count = await repository.delete_all_books_by_class(class_id)
-    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_card_keyboard(class_id, stage_id))
+    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
 
 
 def register_admin_handlers(app):
