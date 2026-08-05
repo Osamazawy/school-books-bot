@@ -4,7 +4,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
     """القائمة الرئيسية للبوت (أيقونة أقصى اليمين ونص ممركز بالوسط)."""
     keyboard = [
-        [InlineKeyboardButton("🏛️                           المراحل الدراسية                           ", callback_data="user_stages")],
+        [InlineKeyboardButton("🟢                           المراحل الدراسية                           ", callback_data="user_stages")],
         [InlineKeyboardButton("🔍                            البحث عن كتاب                            ", callback_data="user_search")]
     ]
     if is_admin:
@@ -18,7 +18,7 @@ def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
     use_grid = len(stages) >= 4
     row = []
     for stage in stages:
-        btn = InlineKeyboardButton(f"🏛️ {stage['name']}", callback_data=f"user_stage_{stage['id']}")
+        btn = InlineKeyboardButton(f"🟢 {stage['name']}", callback_data=f"user_stage_{stage['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
@@ -39,7 +39,7 @@ def get_classes_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> Inline
     use_grid = len(classes) >= 4
     row = []
     for cls in classes:
-        btn = InlineKeyboardButton(f"🎓 {cls['name']}", callback_data=f"user_class_{cls['id']}")
+        btn = InlineKeyboardButton(f"🔹 {cls['name']}", callback_data=f"user_class_{cls['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
@@ -102,7 +102,7 @@ def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboa
     use_grid = len(stages) >= 4
     row = []
     for s in stages:
-        btn = InlineKeyboardButton(f"🏛️ {s['name']}", callback_data=f"adm_view_cls_{s['id']}")
+        btn = InlineKeyboardButton(f"🟢 {s['name']}", callback_data=f"adm_view_cls_{s['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
@@ -123,7 +123,7 @@ def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int
     use_grid = len(classes) >= 4
     row = []
     for c in classes:
-        btn = InlineKeyboardButton(f"🎓 {c['name']}", callback_data=f"adm_view_bks_{c['id']}")
+        btn = InlineKeyboardButton(f"🔹 {c['name']}", callback_data=f"adm_view_bks_{c['id']}")
         if use_grid:
             row.append(btn)
             if len(row) == 2:
