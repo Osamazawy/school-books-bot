@@ -1,7 +1,8 @@
 import os
 import sys
-import asyncio
+import traceback
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 from telegram import Update
 from telegram.ext import ApplicationBuilder, Defaults
 from telegram.constants import ParseMode
@@ -44,14 +45,15 @@ async def get_application():
         register_user_handlers(ptb_application)
 
         await ptb_application.initialize()
-        await init_db()
-        logger.info("تم تهيئة البوت وقاعدة البيانات بنجاح.")
+        
+        # محاولة تهيئة قاعدة البيانات دون إسقاط التطبيق إذا حدثت مشكلة شبكة مؤقتة
+        try:
+            await init_db()
+        except Exception as db_err:
+            logger.error(f"خطأ أثناء تهيئة قاعدة البيانات: {db_err}\n{traceback.format_exc()}")
+            
+        logger.info("تم تهيئة البوت بنجاح.")
     return ptb_application
-
-
-@app.on_event("startup")
-async def on_startup():
-    await get_application()
 
 
 @app.get("/")
@@ -74,20 +76,26 @@ async def process_webhook(request: Request):
         await application.process_update(update)
         return Response(status_code=200)
     except Exception as e:
-        logger.error(f"خطأ أثناء معالجة Webhook: {e}")
-        return Response(status_code=500)
+        err_msg = f"خطأ أثناء معالجة Webhook: {e}\n{traceback.format_exc()}"
+        logger.error(err_msg)
+        return JSONResponse(status_code=500, content={"error": str(e), "traceback": traceback.format_exc()})
 
 
 @app.get("/api/set_webhook")
 async def set_webhook():
     """تفعيل رابط الـ Webhook تلقائياً مع سيرفرات تلجرام."""
-    if not WEBHOOK_URL:
-        return {"error": "لم يتم تعيين متغير البيئة WEBHOOK_URL في Vercel!"}
-    
-    application = await get_application()
-    target_url = f"{WEBHOOK_URL.rstrip('/')}/api/webhook"
-    success = await application.bot.set_webhook(url=target_url)
-    return {
-        "success": success,
-        "webhook_url": target_url
-    }
+    try:
+        if not WEBHOOK_URL:
+            return {"error": "لم يتم تعيين متغير البيئة WEBHOOK_URL في Vercel!"}
+        
+        application = await get_application()
+        target_url = f"{WEBHOOK_URL.rstrip('/')}/api/webhook"
+        success = await application.bot.set_webhook(url=target_url)
+        return {
+            "success": success,
+            "webhook_url": target_url
+        }
+    except Exception as e:
+        err_msg = f"خطأ أثناء ضبط Webhook: {e}\n{traceback.format_exc()}"
+        logger.error(err_msg)
+        return JSONResponse(status_code=500, content={"error": str(e), "traceback": traceback.format_exc()})
