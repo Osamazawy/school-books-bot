@@ -146,6 +146,7 @@ async def init_db():
                         name VARCHAR(255) NOT NULL,
                         CONSTRAINT unique_stage_class UNIQUE (stage_id, name)
                     );
+                    ALTER TABLE books DROP COLUMN IF EXISTS subject_id;
                     DROP TABLE IF EXISTS subjects CASCADE;
                     CREATE TABLE IF NOT EXISTS books (
                         id SERIAL PRIMARY KEY,
