@@ -19,14 +19,15 @@ def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], i
         classes = item["classes"]
         palette = STAGE_PALETTES[idx % len(STAGE_PALETTES)]
         
-        # عنوان المرحلة بدون رموز
-        header_text = stage['name']
+        # عنوان المرحلة الرأسي بـ رمز واحد عن اليمين واليسار
+        h_icon = palette["header_icon"]
+        header_text = f"{h_icon} {stage['name']} {h_icon}"
         keyboard.append([InlineKeyboardButton(header_text, callback_data="info_noop")])
         
-        # أزرار الصفوف بالمربعات الملونة بدون أرقام
+        # أزرار الصفوف باسم الصف فقط بدون رموز
         row = []
         for cls in classes:
-            btn_text = f"{palette['btn_icon']} {cls['name']}".strip()
+            btn_text = cls['name'].strip()
             btn = InlineKeyboardButton(btn_text, callback_data=f"user_class_{cls['id']}")
             row.append(btn)
             if len(row) == 2:
