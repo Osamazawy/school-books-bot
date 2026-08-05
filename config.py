@@ -14,7 +14,7 @@ ADMIN_IDS: List[int] = [
 
 # مسار أو رابط قاعدة البيانات (SQLite كبديل محلي، أو DATABASE_URL لـ Supabase PostgreSQL)
 DB_PATH: str = os.getenv("DB_PATH", "school_books.db")
-DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres.uefbgnyzqldhscqiqsuz:7raawaWAKQSlYwyc@aws-0-eu-central-1.pooler.supabase.com:6543/postgres")
 
 # رابط الـ Webhook الخاص بـ Vercel
 WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
