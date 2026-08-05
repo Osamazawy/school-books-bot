@@ -498,7 +498,9 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not action:
         return
 
-    context.user_data.pop('admin_action', None)
+    # الإبقاء على حالة الرفع الجماعي نشطة لاستقبال كافة الملفات المرسلة دفعة واحدة
+    if not action.startswith('upload_book_'):
+        context.user_data.pop('admin_action', None)
 
     if action == 'broadcast':
         await send_broadcast(update, context)
@@ -545,7 +547,8 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
             file_id = file_obj.file_id
             title = file_obj.file_name or msg.caption or "كتاب دراسي"
             await repository.add_book_for_class(class_id, title, "", file_id)
-            await msg.reply_text(f"✅ تم رفع كتاب: <b>{title}</b> بنجاح!", parse_mode="HTML", reply_markup=inline.get_admin_main_keyboard())
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 كارت الصف", callback_data=f"adm_class_card_{class_id}")]])
+            await msg.reply_text(f"✅ تم رفع كتاب: <b>{title}</b> بنجاح!\n<i>يمكنك إرسال باقي الكتب أو الضغط على كارت الصف عند الانتهاء.</i>", parse_mode="HTML", reply_markup=keyboard)
         else:
             await msg.reply_text("⚠️ يرجى إرسال ملف الـ PDF كملف مرفق.")
         return
