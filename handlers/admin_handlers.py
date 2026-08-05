@@ -39,6 +39,22 @@ async def safe_edit_message(query, text: str, reply_markup=None, parse_mode: str
             logger.error(f"خطأ أثناء تعديل الرسالة: {e}")
 
 
+async def countdown_delay(query, title_text: str, duration: int = 3) -> None:
+    """إظهار عداد تنازلي تفاعلي حقيقي قبل تنفيذ عملية الحذف الحساسة."""
+    if not query:
+        return
+    for i in range(duration, 0, -1):
+        try:
+            await query.edit_message_text(
+                f"⏳ <b>{title_text}</b>\n\n"
+                f"سيتم تنفيذ إجراء الحذف خلال <b>{i}</b> ثوانٍ...",
+                parse_mode="HTML"
+            )
+        except Exception:
+            pass
+        await asyncio.sleep(1)
+
+
 # ==================== لوحة التحكم الرئيسية والإحصائيات ====================
 
 async def admin_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -243,6 +259,8 @@ async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         except Exception:
             pass
     stage_id = int(query.data.split("_")[-1])
+    stage = await repository.get_stage_by_id(stage_id)
+    await countdown_delay(query, f"حذف مرحلة: {stage['name'] if stage else ''}", duration=3)
     await repository.delete_stage(stage_id)
     await safe_edit_message(query, "✅ تم حذف المرحلة وكافة محتوياتها بنجاح.", reply_markup=inline.get_admin_main_keyboard())
 
@@ -324,6 +342,7 @@ async def exec_delete_class(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
     stage_id = cls['stage_id'] if cls else 1
+    await countdown_delay(query, f"حذف صف: {cls['name'] if cls else ''} وكافة كتبه", duration=3)
     await repository.delete_class(class_id)
     await safe_edit_message(query, "✅ تم حذف الصف بنجاح.", reply_markup=inline.get_admin_classes_list_keyboard([], stage_id))
 
@@ -433,6 +452,7 @@ async def exec_delete_single_book(update: Update, context: ContextTypes.DEFAULT_
     book_id = int(query.data.split("_")[-1])
     book = await repository.get_book_by_id(book_id)
     class_id = book['class_id'] if book else 1
+    await countdown_delay(query, f"حذف كتاب: {book['title'] if book else ''}", duration=3)
     await repository.delete_book(book_id)
     await safe_edit_message(query, "✅ تم حذف الكتاب نهائياً.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, 1))
 
@@ -541,8 +561,9 @@ async def exec_delete_all_class_books(update: Update, context: ContextTypes.DEFA
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
     stage_id = cls['stage_id'] if cls else 1
+    await countdown_delay(query, f"تفريغ كافة كتب صف: {cls['name'] if cls else ''}", duration=3)
     count = await repository.delete_all_books_by_class(class_id)
-    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_card_keyboard(class_id, stage_id))
+    await safe_edit_message(query, f"✅ تم تفريغ وحذف جميع الكتب ({count} كتاب) بنجاح لصف <b>{cls['name'] if cls else ''}</b>.", reply_markup=inline.get_admin_class_books_list_keyboard([], class_id, stage_id))
 
 
 def register_admin_handlers(app):
