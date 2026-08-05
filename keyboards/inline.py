@@ -17,10 +17,17 @@ def get_main_menu_keyboard(is_admin: bool = False) -> InlineKeyboardMarkup:
 
 
 def get_stages_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض المراحل للمستخدم من اليمين إلى اليسار (RTL Grid)."""
+    """عرض المراحل للمستخدم: زر علوي بعرض كامل يليه أزواج من اليمين لليسار."""
     keyboard = []
+    if not stages:
+        keyboard.append([InlineKeyboardButton("🏠 القائمة الرئيسية", callback_data="main_menu")])
+        return InlineKeyboardMarkup(keyboard)
+
+    # جعل المرحلة الأولى بعرض كامل في الأعلى
+    keyboard.append([InlineKeyboardButton(f"🏛️ {stages[0]['name']}", callback_data=f"user_stage_{stages[0]['id']}")])
+
     row = []
-    for stage in stages:
+    for stage in stages[1:]:
         row.append(InlineKeyboardButton(f"🏛️ {stage['name']}", callback_data=f"user_stage_{stage['id']}"))
         if len(row) == 2:
             keyboard.append(row[::-1])
@@ -93,16 +100,25 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
 
 
 def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض المراحل للآدمن مباشرة وتنقله للصفوف فورا."""
+    """عرض المراحل للآدمن: زر علوي بعرض كامل يليه أزواج من اليمين لليسار."""
     keyboard = []
+    if not stages:
+        keyboard.append([InlineKeyboardButton("➕ إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
+        keyboard.append([InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")])
+        return InlineKeyboardMarkup(keyboard)
+
+    # جعل المرحلة الأولى بعرض كامل في الأعلى
+    keyboard.append([InlineKeyboardButton(f"🏛️ {stages[0]['name']}", callback_data=f"adm_view_cls_{stages[0]['id']}")])
+
     row = []
-    for s in stages:
+    for s in stages[1:]:
         row.append(InlineKeyboardButton(f"🏛️ {s['name']}", callback_data=f"adm_view_cls_{s['id']}"))
         if len(row) == 2:
             keyboard.append(row[::-1])
             row = []
     if row:
         keyboard.append(row[::-1])
+
     keyboard.append([InlineKeyboardButton("➕ إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
     keyboard.append([InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")])
     return InlineKeyboardMarkup(keyboard)
