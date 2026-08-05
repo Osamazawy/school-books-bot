@@ -42,18 +42,18 @@ async def admin_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not await check_admin(update):
         return
 
-    text = "⚙️ **لوحة تحكم المشرفين المحترفة**\nاختر القسم المطلوب من الأزرار المركزية أدناه:"
+    text = "⚙️ <b>لوحة تحكم المشرفين المحترفة</b>\nاختر القسم المطلوب من الأزرار المركزية أدناه:"
     if update.callback_query:
         await update.callback_query.answer()
         await update.callback_query.edit_message_text(
             text,
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=inline.get_admin_main_keyboard()
         )
     elif update.message:
         await update.message.reply_text(
             text,
-            parse_mode="Markdown",
+            parse_mode="HTML",
             reply_markup=inline.get_admin_main_keyboard()
         )
 
@@ -75,18 +75,18 @@ async def admin_stats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         breakdown_text += f"   • {item['stage_name']}: {item['books_cnt']} كتاب\n"
 
     stats_text = (
-        "📊 **الإحصائيات الشاملة للنظام**\n\n"
-        f"👥 **إجمالي المشتركين:** {users_cnt}\n"
-        f"🏛️ **عدد المراحل:** {stages_cnt}\n"
-        f"🎓 **عدد الصفوف:** {classes_cnt}\n"
-        f"📚 **إجمالي الكتب المرفوعة:** {books_cnt}\n\n"
-        f"📋 **توزيع الكتب حسب المراحل:**\n{breakdown_text if breakdown_text else '   لا توجد كتب حالياً.'}"
+        "📊 <b>الإحصائيات الشاملة للنظام</b>\n\n"
+        f"👥 <b>إجمالي المشتركين:</b> {users_cnt}\n"
+        f"🏛️ <b>عدد المراحل:</b> {stages_cnt}\n"
+        f"🎓 <b>عدد الصفوف:</b> {classes_cnt}\n"
+        f"📚 <b>إجمالي الكتب المرفوعة:</b> {books_cnt}\n\n"
+        f"📋 <b>توزيع الكتب حسب المراحل:</b>\n{breakdown_text if breakdown_text else '   لا توجد كتب حالياً.'}"
     )
     
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")]
     ])
-    await query.edit_message_text(stats_text, parse_mode="Markdown", reply_markup=keyboard)
+    await query.edit_message_text(stats_text, parse_mode="HTML", reply_markup=keyboard)
 
 
 # ==================== الإذاعة والإعلانات للطلاب (Broadcast) ====================
@@ -105,9 +105,9 @@ async def start_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("❌ إلغاء الإذاعة", callback_data="admin_panel")]])
     await query.edit_message_text(
-        f"📢 **إذاعة / إعلان جديد للطلاب (عدد المشتركين: {users_cnt})**\n\n"
+        f"📢 <b>إذاعة / إعلان جديد للطلاب (عدد المشتركين: {users_cnt})</b>\n\n"
         "أرسل أو وِجّه الرسالة التي ترغب بنشرها لجميع المشتركين الآن (نص، صورة، ملصق، أو مستند):",
-        parse_mode="Markdown",
+        parse_mode="HTML",
         reply_markup=keyboard
     )
     return WAITING_BROADCAST
@@ -134,10 +134,10 @@ async def send_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.warning(f"تعذر إرسال الإذاعة للمستخدم {uid}: {e}")
 
     await status_msg.edit_text(
-        f"🎉 **تمت الإذاعة بنجاح!**\n\n"
-        f"✅ تم الإرسال إلى: **{success}** مستخدم\n"
-        f"❌ تعذر الإرسال إلى: **{failed}** مستخدم",
-        parse_mode="Markdown",
+        f"🎉 <b>تمت الإذاعة بنجاح!</b>\n\n"
+        f"✅ تم الإرسال إلى: <b>{success}</b> مستخدم\n"
+        f"❌ تعذر الإرسال إلى: <b>{failed}</b> مستخدم",
+        parse_mode="HTML",
         reply_markup=inline.get_admin_main_keyboard()
     )
     return ConversationHandler.END
@@ -154,11 +154,11 @@ async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_
         return
 
     stages = await repository.get_all_stages()
-    text = "🏛️ **إدارة المراحل والصفوف والمناهج**\nاختر المرحلة الدراسية لفتح كارت التحكم الخاص بها:"
+    text = "🏛️ <b>إدارة المراحل والصفوف والمناهج</b>\nاختر المرحلة الدراسية لفتح كارت التحكم الخاص بها:"
     
     await query.edit_message_text(
         text,
-        parse_mode="Markdown",
+        parse_mode="HTML",
         reply_markup=inline.get_admin_stages_list_keyboard(stages)
     )
 
@@ -178,13 +178,13 @@ async def view_stage_card(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         return
 
     card_text = (
-        f"🏛️ **كارت إدارة مرحلة: {stage['name']}**\n\n"
-        f"🎓 **عدد الصفوف المضافة بها:** {len(classes)} صف دراسي\n\n"
+        f"🏛️ <b>كارت إدارة مرحلة: {stage['name']}</b>\n\n"
+        f"🎓 <b>عدد الصفوف المضافة بها:</b> {len(classes)} صف دراسي\n\n"
         "اختر الإجراء المطلوب لهذه المرحلة من الأزرار أدناه:"
     )
     await query.edit_message_text(
         card_text,
-        parse_mode="Markdown",
+        parse_mode="HTML",
         reply_markup=inline.get_admin_stage_card_keyboard(stage_id)
     )
 

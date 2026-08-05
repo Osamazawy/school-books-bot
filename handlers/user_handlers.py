@@ -42,8 +42,8 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     is_admin = user.id in ADMIN_IDS if user else False
     
     await query.edit_message_text(
-        "📚 **القائمة الرئيسية**\nيرجى اختيار القسم المطلوب من الأزرار أدناه:",
-        parse_mode="Markdown",
+        "📚 <b>القائمة الرئيسية</b>\nيرجى اختيار القسم المطلوب من الأزرار أدناه:",
+        parse_mode="HTML",
         reply_markup=inline.get_main_menu_keyboard(is_admin=is_admin)
     )
 
@@ -62,8 +62,8 @@ async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     await query.edit_message_text(
-        "🏛️ **المراحل الدراسية**\nاختر المرحلة الدراسية لعرض صفوفها المتاحة:",
-        parse_mode="Markdown",
+        "🏛️ <b>المراحل الدراسية</b>\nاختر المرحلة الدراسية لعرض صفوفها المتاحة:",
+        parse_mode="HTML",
         reply_markup=inline.get_stages_keyboard(stages)
     )
 
@@ -79,15 +79,15 @@ async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if not classes:
         await query.edit_message_text(
-            f"⚠️ لا توجد صفوف مضافة لمرحلة **{stage_name}** حتى الآن.",
-            parse_mode="Markdown",
+            f"⚠️ لا توجد صفوف مضافة لمرحلة <b>{stage_name}</b> حتى الآن.",
+            parse_mode="HTML",
             reply_markup=inline.get_classes_keyboard([], stage_id)
         )
         return
 
     await query.edit_message_text(
-        f"🎓 **صفوف مرحلة: {stage_name}**\nاختر الصف الدراسي لعرض كتبه ومناهجه:",
-        parse_mode="Markdown",
+        f"🎓 <b>صفوف مرحلة: {stage_name}</b>\nاختر الصف الدراسي لعرض كتبه ومناهجه:",
+        parse_mode="HTML",
         reply_markup=inline.get_classes_keyboard(classes, stage_id)
     )
 
