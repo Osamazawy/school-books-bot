@@ -101,7 +101,7 @@ async def render_filtered_stats(update: Update, context: ContextTypes.DEFAULT_TY
 
         top_books_text = ""
         if data["top_books"]:
-            top_books_text = "\n🔥 <b>الكتب الأكثر تحميلاً في هذه الفترة:</b>\n"
+            top_books_text = "\n🔥 <b>الكتب الأكثر تنزيلاً في هذه الفترة:</b>\n"
             for idx, tb in enumerate(data["top_books"], 1):
                 top_books_text += f"   {idx}. 📖 <b>{tb['title']}</b> ({tb['class_name']}): {tb['downloads_count']} مرة\n"
 
@@ -112,7 +112,7 @@ async def render_filtered_stats(update: Update, context: ContextTypes.DEFAULT_TY
             f"👥 <b>إجمالي المشتركين:</b> {data['users_cnt']}{new_users_str}\n"
             f"🏛️ <b>المراحل والصفوف:</b> {data['stages_cnt']} مرحلة | {data['classes_cnt']} صفاً\n"
             f"📚 <b>إجمالي الكتب المرفوعة:</b> {data['books_cnt']} كتاباً\n"
-            f"📥 <b>تنزيلات هذه الفترة:</b> {data['period_downloads']} تحميل\n"
+            f"📥 <b>تنزيلات هذه الفترة:</b> {data['period_downloads']} تنزيل\n"
             f"{stage_pct_text}"
             f"{top_books_text}"
         )
@@ -412,7 +412,7 @@ async def view_single_book_card(update: Update, context: ContextTypes.DEFAULT_TY
         f"📌 <b>العنوان:</b> {book['title']}\n"
         f"🏛️ <b>المرحلة:</b> {book['stage_name']}\n"
         f"🎓 <b>الصف:</b> {book['class_name']}\n"
-        f"📥 <b>عدد التحميلات:</b> {dl_cnt} مرة\n"
+        f"📥 <b>عدد التنزيلات:</b> {dl_cnt} مرة\n"
         f"✅ <b>حالة الملف:</b> مرفق ومحفوظ بنجاح"
     )
     await safe_edit_message(query, text, reply_markup=inline.get_admin_single_book_card_keyboard(book_id, book['class_id']))

@@ -117,7 +117,7 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
         return
 
     await query.edit_message_text(
-        f"📘 <b>كتب ومناهج: {class_name}</b>\nاختر الكتاب المطلوب لتحميله مباشرة:",
+        f"📘 <b>كتب ومناهج: {class_name}</b>\nاختر الكتاب المطلوب لتنزيله مباشرة:",
         parse_mode="HTML",
         reply_markup=inline.get_books_keyboard(books, stage_id)
     )

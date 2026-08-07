@@ -88,7 +88,7 @@ def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int = 1) -> Inline
 def get_book_details_keyboard(book_id: int, class_id: int) -> InlineKeyboardMarkup:
     """أزرار تفاصيل الكتاب للمستخدم بعرض كامل."""
     keyboard = [
-        [InlineKeyboardButton("📥 تحميل الكتاب (PDF)", callback_data=f"dl_book_{book_id}")],
+        [InlineKeyboardButton("📥 تنزيل الكتاب (PDF)", callback_data=f"dl_book_{book_id}")],
         [InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{class_id}")]
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -163,7 +163,7 @@ def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: i
 def get_admin_single_book_card_keyboard(book_id: int, class_id: int) -> InlineKeyboardMarkup:
     """كارت التحكم المباشر بكتاب مفرد."""
     keyboard = [
-        [InlineKeyboardButton("📥 تحميل واستعراض الملف", callback_data=f"dl_book_{book_id}")],
+        [InlineKeyboardButton("📥 تنزيل الملف", callback_data=f"dl_book_{book_id}")],
         [
             InlineKeyboardButton("✏️ تعديل العنوان", callback_data=f"adm_ren_bk_{book_id}"),
             InlineKeyboardButton("🗑️ حذف الكتاب", callback_data=f"adm_del_bk_confirm_{book_id}")
