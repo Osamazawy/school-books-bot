@@ -146,7 +146,7 @@ async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer("📥 جاري تحضير ملف الـ PDF...")
+    await query.answer("⏳ جاري تحضير وإرسال الملف... يرجى الانتظار")
     
     book_id = int(query.data.split("_")[-1])
     book = await repository.get_book_by_id(book_id)
@@ -154,6 +154,20 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
     if not book:
         await query.message.reply_text("❌ خطأ: هذا الكتاب غير موجود.")
         return
+
+    # 1. تحديث الرسالة فوراً لحالة الجلب المباشر وإخفاء زر التحميل لمنع الضغط المكرر
+    loading_text = (
+        f"📖 <b>{book['title']}</b>\n"
+        f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
+        "⏳ <b>جاري تحضير وإرسال ملف الـ PDF... يرجى الانتظار لحظات</b>"
+    )
+    loading_keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("⏳ جاري إرسال الملف...", callback_data="info_noop")]
+    ])
+    try:
+        await query.edit_message_text(loading_text, parse_mode="HTML", reply_markup=loading_keyboard)
+    except Exception:
+        pass
 
     caption = (
         f"📚 <b>{book['title']}</b>\n"
@@ -169,9 +183,33 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
         )
         await repository.record_download_log(book_id, query.from_user.id)
         logger.info(f"تم إرسال الكتاب {book['id']} ({book['title']}) إلى {query.from_user.id}")
+
+        # 2. تحديث الكارت إلى حالة النجاح وإظهار زر العودة فقط
+        done_text = (
+            f"📖 <b>{book['title']}</b>\n"
+            f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
+            "✅ <b>تم إرسال ملف الـ PDF بنجاح!</b>"
+        )
+        done_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{book['class_id']}")]
+        ])
+        try:
+            await query.edit_message_text(done_text, parse_mode="HTML", reply_markup=done_keyboard)
+        except Exception:
+            pass
+
     except Exception as e:
         logger.error(f"خطأ إرسال الملف: {e}")
-        await query.message.reply_text("❌ تعذر إرسال الملف.")
+        error_text = (
+            f"📖 <b>{book['title']}</b>\n"
+            f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
+            "❌ <b>تعذر إرسال الملف حالياً، يرجى المحاولة مرة أخرى.</b>"
+        )
+        retry_keyboard = inline.get_book_details_keyboard(book_id, book['class_id'])
+        try:
+            await query.edit_message_text(error_text, parse_mode="HTML", reply_markup=retry_keyboard)
+        except Exception:
+            pass
 
 def register_user_handlers(app):
     app.add_handler(CommandHandler("start", start_handler))
