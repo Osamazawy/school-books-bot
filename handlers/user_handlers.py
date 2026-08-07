@@ -173,6 +173,12 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
         except Exception:
             pass
 
+    chat_id = query.message.chat_id if query and query.message else update.effective_chat.id
+    try:
+        await context.bot.send_chat_action(chat_id=chat_id, action="upload_document")
+    except Exception:
+        pass
+
     caption = (
         f"📚 <b>{book['title']}</b>\n"
         f"🏛️ {book['stage_name']} - 🎓 {book['class_name']}"
