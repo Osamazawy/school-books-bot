@@ -22,7 +22,7 @@ async def check_admin(update: Update) -> bool:
     if not is_admin:
         if update.callback_query:
             try:
-                await update.callback_query.answer("❌ عذراً، هذه العملية مخصصة للمشرفين فقط.", show_alert=True)
+                await update.callback_query.answer()
             except Exception:
                 pass
         elif update.message:
