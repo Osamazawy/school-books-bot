@@ -136,15 +136,9 @@ async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await query.edit_message_text("❌ لم يتم العثور على هذا الكتاب.")
         return
 
-    dl_cnt = book.get('downloads_count', 0)
-    dl_info = f"📥 <b>عدد التحميلات:</b> {dl_cnt} مرة\n" if dl_cnt > 0 else ""
-
     caption = (
-        f"📘 <b>{book['title']}</b>\n\n"
-        f"🏛️ <b>المرحلة:</b> {book['stage_name']}\n"
-        f"🎓 <b>الصف:</b> {book['class_name']}\n"
-        f"{dl_info}\n"
-        "اضغط على الزر أدناه لإرسال ملف الـ PDF فوراً:"
+        f"📖 <b>{book['title']}</b>\n"
+        f"🎓 <b>الصف:</b> {book['class_name']}"
     )
     
     await query.edit_message_text(
