@@ -19,14 +19,11 @@ from handlers.admin_handlers import register_admin_handlers
 
 app = FastAPI()
 
-@app.middleware("http")
-async def catch_exceptions_middleware(request: Request, call_next):
-    try:
-        return await call_next(request)
-    except Exception as exc:
-        err = f"Unhandled Exception: {exc}\n{traceback.format_exc()}"
-        print(err, flush=True)
-        return JSONResponse(status_code=500, content={"error": str(exc), "traceback": traceback.format_exc()})
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    err = f"Unhandled Exception: {exc}\n{traceback.format_exc()}"
+    print(err, flush=True)
+    return JSONResponse(status_code=200, content={"status": "error", "message": str(exc)})
 
 bot_app = None
 bot_initialized = False
