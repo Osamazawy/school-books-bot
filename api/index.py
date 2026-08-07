@@ -11,26 +11,22 @@ from telegram.constants import ParseMode
 # إضافة المسار الرئيسي للمشروع
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import BOT_TOKEN, WEBHOOK_URL
-from database.connection import init_db
-from handlers.user_handlers import register_user_handlers
-from handlers.search_handlers import register_search_handlers
-from handlers.admin_handlers import register_admin_handlers
+app = FastAPI(title="School Books Bot API")
 
-app = FastAPI()
-
-@app.middleware("http")
-async def catch_exceptions_middleware(request: Request, call_next):
-    try:
-        return await call_next(request)
-    except Exception as exc:
-        err = f"Unhandled Exception: {exc}\n{traceback.format_exc()}"
-        print(err, flush=True)
-        return JSONResponse(status_code=500, content={"error": str(exc), "traceback": traceback.format_exc()})
-
+init_error = None
+bot_app = None
 bot_initialized = False
 
-def create_telegram_app():
+try:
+    from config import BOT_TOKEN, WEBHOOK_URL
+    from database.connection import init_db
+    from handlers.user_handlers import register_user_handlers
+    from handlers.search_handlers import register_search_handlers
+    from handlers.admin_handlers import register_admin_handlers
+    from telegram import Update
+    from telegram.ext import ApplicationBuilder, Defaults
+    from telegram.constants import ParseMode
+
     defaults = Defaults(parse_mode=ParseMode.HTML)
     clean_token = BOT_TOKEN.strip().strip('"').strip("'")
     bot_app = (
@@ -42,13 +38,15 @@ def create_telegram_app():
     register_admin_handlers(bot_app)
     register_search_handlers(bot_app)
     register_user_handlers(bot_app)
-    return bot_app
-
-bot_app = create_telegram_app()
+except Exception as e:
+    init_error = f"Module Init Error: {e}\n{traceback.format_exc()}"
+    print(init_error, flush=True)
 
 async def ensure_bot_initialized():
     global bot_initialized
-    if not bot_initialized:
+    if init_error:
+        raise RuntimeError(init_error)
+    if not bot_initialized and bot_app:
         try:
             await init_db()
         except Exception as e:

@@ -17,7 +17,7 @@ DB_PATH: str = os.getenv("DB_PATH", "school_books.db")
 DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://postgres.uefbgnyzqldhscqiqsuz:7raawaWAKQSlYwyc@aws-0-eu-central-1.pooler.supabase.com:5432/postgres")
 
 # رابط الـ Webhook الخاص بـ Vercel
-WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
+WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "https://school-books-bot-jrt8.vercel.app").strip().strip('"').strip("'")
 
 # مستوى التسجيل Logging
 LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
