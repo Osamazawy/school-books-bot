@@ -35,9 +35,9 @@ try:
         .defaults(defaults)
         .build()
     )
+    register_user_handlers(bot_app)
     register_admin_handlers(bot_app)
     register_search_handlers(bot_app)
-    register_user_handlers(bot_app)
 except Exception as e:
     init_error = f"Module Init Error: {e}\n{traceback.format_exc()}"
     print(init_error, flush=True)
