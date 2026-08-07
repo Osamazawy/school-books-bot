@@ -12,18 +12,8 @@ from telegram.constants import ParseMode
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import BOT_TOKEN, WEBHOOK_URL
-from database.connection import init_db
-from handlers.user_handlers import register_user_handlers
-from handlers.search_handlers import register_search_handlers
-from handlers.admin_handlers import register_admin_handlers
 
 app = FastAPI()
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    err = f"Unhandled Exception: {exc}\n{traceback.format_exc()}"
-    print(err, flush=True)
-    return JSONResponse(status_code=200, content={"status": "error", "message": str(exc)})
 
 bot_app = None
 bot_initialized = False
@@ -31,6 +21,10 @@ bot_initialized = False
 def get_telegram_app():
     global bot_app
     if bot_app is None:
+        from handlers.user_handlers import register_user_handlers
+        from handlers.search_handlers import register_search_handlers
+        from handlers.admin_handlers import register_admin_handlers
+
         defaults = Defaults(parse_mode=ParseMode.HTML)
         clean_token = BOT_TOKEN.strip().strip('"').strip("'")
         bot_app = (
@@ -49,14 +43,15 @@ async def ensure_bot_initialized():
     app_obj = get_telegram_app()
     if not bot_initialized:
         try:
+            from database.connection import init_db
             await init_db()
         except Exception as e:
-            print(f"Error initializing DB in serverless: {e}", flush=True)
+            print(f"Error initializing DB in serverless: {e}\n{traceback.format_exc()}", flush=True)
         try:
             await app_obj.initialize()
             await app_obj.start()
         except Exception as e:
-            print(f"Error starting Telegram app: {e}", flush=True)
+            print(f"Error starting Telegram app: {e}\n{traceback.format_exc()}", flush=True)
         bot_initialized = True
     return app_obj
 
