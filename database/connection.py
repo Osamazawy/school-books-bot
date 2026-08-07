@@ -8,10 +8,19 @@ from utils.logger import logger
 IS_POSTGRES = bool(DATABASE_URL and ("postgres://" in DATABASE_URL or "postgresql://" in DATABASE_URL))
 
 if IS_POSTGRES:
-    import psycopg2
-    from psycopg2.extras import RealDictCursor
+    try:
+        import psycopg2
+        from psycopg2.extras import RealDictCursor
+    except Exception as e:
+        logger.error(f"تحذير: تعذر استيراد psycopg2: {e}")
+        psycopg2 = None
+        RealDictCursor = None
 else:
-    import aiosqlite
+    try:
+        import aiosqlite
+    except Exception as e:
+        logger.error(f"تحذير: تعذر استيراد aiosqlite: {e}")
+        aiosqlite = None
 
 
 def get_formatted_db_url(url: str) -> str:
