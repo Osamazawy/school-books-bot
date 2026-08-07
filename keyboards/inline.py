@@ -40,8 +40,6 @@ def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], i
     if is_admin:
         keyboard.append([InlineKeyboardButton("❇️ إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
         keyboard.append([InlineKeyboardButton("↩️ لوحة التحكم", callback_data="admin_panel")])
-    else:
-        keyboard.append([InlineKeyboardButton("🏠 القائمة الرئيسية", callback_data="main_menu")])
         
     return InlineKeyboardMarkup(keyboard)
 
