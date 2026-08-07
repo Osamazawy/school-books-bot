@@ -43,11 +43,6 @@ async def ensure_bot_initialized():
     app_obj = get_telegram_app()
     if not bot_initialized:
         try:
-            from database.connection import init_db
-            await init_db()
-        except Exception as e:
-            print(f"Error initializing DB in serverless: {e}\n{traceback.format_exc()}", flush=True)
-        try:
             await app_obj.initialize()
             await app_obj.start()
         except Exception as e:
