@@ -28,56 +28,62 @@ async def catch_exceptions_middleware(request: Request, call_next):
         print(err, flush=True)
         return JSONResponse(status_code=500, content={"error": str(exc), "traceback": traceback.format_exc()})
 
+bot_app = None
 bot_initialized = False
 
-def create_telegram_app():
-    defaults = Defaults(parse_mode=ParseMode.HTML)
-    clean_token = BOT_TOKEN.strip().strip('"').strip("'")
-    bot_app = (
-        ApplicationBuilder()
-        .token(clean_token)
-        .defaults(defaults)
-        .build()
-    )
-    register_admin_handlers(bot_app)
-    register_search_handlers(bot_app)
-    register_user_handlers(bot_app)
+def get_telegram_app():
+    global bot_app
+    if bot_app is None:
+        defaults = Defaults(parse_mode=ParseMode.HTML)
+        clean_token = BOT_TOKEN.strip().strip('"').strip("'")
+        bot_app = (
+            ApplicationBuilder()
+            .token(clean_token)
+            .defaults(defaults)
+            .build()
+        )
+        register_admin_handlers(bot_app)
+        register_search_handlers(bot_app)
+        register_user_handlers(bot_app)
     return bot_app
-
-bot_app = create_telegram_app()
 
 async def ensure_bot_initialized():
     global bot_initialized
+    app_obj = get_telegram_app()
     if not bot_initialized:
         try:
             await init_db()
         except Exception as e:
             print(f"Error initializing DB in serverless: {e}", flush=True)
-        await bot_app.initialize()
-        await bot_app.start()
+        try:
+            await app_obj.initialize()
+            await app_obj.start()
+        except Exception as e:
+            print(f"Error starting Telegram app: {e}", flush=True)
         bot_initialized = True
+    return app_obj
 
 async def execute_set_webhook():
     clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
     if not clean_webhook_url:
         return {"error": "WEBHOOK_URL environment variable is missing"}
     
-    await ensure_bot_initialized()
+    app_obj = await ensure_bot_initialized()
     target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
-    success = await bot_app.bot.set_webhook(url=target_url)
+    success = await app_obj.bot.set_webhook(url=target_url)
     return {"success": success, "webhook_url": target_url}
 
 async def execute_webhook(request: Request):
     try:
         data = await request.json()
-        await ensure_bot_initialized()
-        update = Update.de_json(data, bot_app.bot)
-        await bot_app.process_update(update)
-        await asyncio.sleep(1.2)
-        return {"status": "ok"}
+        app_obj = await ensure_bot_initialized()
+        update = Update.de_json(data, app_obj.bot)
+        if update:
+            await app_obj.process_update(update)
+        return JSONResponse(status_code=200, content={"status": "ok"})
     except Exception as e:
         print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
-        return {"status": "error", "message": str(e)}
+        return JSONResponse(status_code=200, content={"status": "error", "message": str(e)})
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
 async def handle_routes(request: Request, full_path: str = ""):
