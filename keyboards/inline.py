@@ -81,7 +81,7 @@ def get_books_keyboard(books: List[Dict[str, Any]], stage_id: int = 1) -> Inline
     for book in books:
         keyboard.append([InlineKeyboardButton(f"📖 {book['title']}", callback_data=f"user_book_{book['id']}")])
         
-    keyboard.append([InlineKeyboardButton("↩️ القائمة الرئيسية والصفوف", callback_data="main_menu")])
+    keyboard.append([InlineKeyboardButton("↩️ القائمة الرئيسية", callback_data="main_menu")])
     return InlineKeyboardMarkup(keyboard)
 
 
