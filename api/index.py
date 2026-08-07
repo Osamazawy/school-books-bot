@@ -11,22 +11,26 @@ from telegram.constants import ParseMode
 # إضافة المسار الرئيسي للمشروع
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-app = FastAPI(title="School Books Bot API")
+from config import BOT_TOKEN, WEBHOOK_URL
+from database.connection import init_db
+from handlers.user_handlers import register_user_handlers
+from handlers.search_handlers import register_search_handlers
+from handlers.admin_handlers import register_admin_handlers
 
-init_error = None
-bot_app = None
+app = FastAPI()
+
+@app.middleware("http")
+async def catch_exceptions_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as exc:
+        err = f"Unhandled Exception: {exc}\n{traceback.format_exc()}"
+        print(err, flush=True)
+        return JSONResponse(status_code=500, content={"error": str(exc), "traceback": traceback.format_exc()})
+
 bot_initialized = False
 
-try:
-    from config import BOT_TOKEN, WEBHOOK_URL
-    from database.connection import init_db
-    from handlers.user_handlers import register_user_handlers
-    from handlers.search_handlers import register_search_handlers
-    from handlers.admin_handlers import register_admin_handlers
-    from telegram import Update
-    from telegram.ext import ApplicationBuilder, Defaults
-    from telegram.constants import ParseMode
-
+def create_telegram_app():
     defaults = Defaults(parse_mode=ParseMode.HTML)
     clean_token = BOT_TOKEN.strip().strip('"').strip("'")
     bot_app = (
@@ -35,27 +39,22 @@ try:
         .defaults(defaults)
         .build()
     )
-    register_user_handlers(bot_app)
     register_admin_handlers(bot_app)
     register_search_handlers(bot_app)
-except Exception as e:
-    init_error = f"Module Init Error: {e}\n{traceback.format_exc()}"
-    print(init_error, flush=True)
+    register_user_handlers(bot_app)
+    return bot_app
+
+bot_app = create_telegram_app()
 
 async def ensure_bot_initialized():
     global bot_initialized
-    if init_error:
-        raise RuntimeError(init_error)
-    if not bot_initialized and bot_app:
+    if not bot_initialized:
         try:
             await init_db()
         except Exception as e:
             print(f"Error initializing DB in serverless: {e}", flush=True)
-        try:
-            await bot_app.initialize()
-            await bot_app.start()
-        except Exception as e:
-            print(f"Error starting bot_app: {e}", flush=True)
+        await bot_app.initialize()
+        await bot_app.start()
         bot_initialized = True
 
 async def execute_set_webhook():
@@ -74,58 +73,22 @@ async def execute_webhook(request: Request):
         await ensure_bot_initialized()
         update = Update.de_json(data, bot_app.bot)
         await bot_app.process_update(update)
-        await asyncio.sleep(0.5)
-        return {"status": "ok"}
-    except Exception as e:
-        print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
-        return {"status": "error", "message": str(e)}
-
-@app.get("/")
-@app.get("/api")
-async def root():
-    return {"status": "ok", "message": "School Books Bot API is active"}
-
-@app.get("/set_webhook")
-@app.get("/api/set_webhook")
-async def set_webhook_route(request: Request):
-    try:
-        clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
-        if not clean_webhook_url:
-            return {"error": "WEBHOOK_URL environment variable is missing"}
-        
-        await ensure_bot_initialized()
-        target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
-        success = await bot_app.bot.set_webhook(url=target_url)
-        return {"success": success, "webhook_url": target_url}
-    except Exception as e:
-        print(f"Error setting webhook: {e}\n{traceback.format_exc()}", flush=True)
-        return {"success": False, "error": str(e)}
-
-@app.post("/webhook")
-@app.post("/api/webhook")
-async def webhook_route(request: Request):
-    try:
-        data = await request.json()
-        await ensure_bot_initialized()
-        update = Update.de_json(data, bot_app.bot)
-        await bot_app.process_update(update)
+        await asyncio.sleep(1.2)
         return {"status": "ok"}
     except Exception as e:
         print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
         return {"status": "error", "message": str(e)}
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
-async def fallback_route(request: Request, full_path: str = ""):
-    path = request.url.path.lower()
+async def handle_routes(request: Request, full_path: str = ""):
     action = request.query_params.get("action", "").lower()
+    path = (full_path or request.url.path or "").lower().strip("/")
     
-    if action == "set_webhook" or "set_webhook" in path or "set_webhook" in full_path:
-        return await set_webhook_route(request)
+    if action == "set_webhook" or "set_webhook" in path:
+        return await execute_set_webhook()
     
-    if action == "webhook" or "webhook" in path or "webhook" in full_path:
-        if request.method == "POST":
-            return await webhook_route(request)
-        return {"status": "ok", "message": "Webhook endpoint active"}
+    if request.method == "POST" and (action == "webhook" or "webhook" in path):
+        return await execute_webhook(request)
         
     return {
         "status": "ok",

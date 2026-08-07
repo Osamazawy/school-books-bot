@@ -10,7 +10,6 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not user:
         return
 
-    context.user_data.clear()
     is_admin = user.id in ADMIN_IDS
     stages_with_classes = await repository.get_all_stages_with_classes()
     welcome_text = f"مرحباً بك يا <b>{user.first_name}</b> في بوت المناهج والكتب الدراسية 📚✨"
