@@ -146,28 +146,32 @@ async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer("⏳ جاري تحضير وإرسال الملف... يرجى الانتظار")
+    if query:
+        try:
+            await query.answer()
+        except Exception:
+            pass
     
     book_id = int(query.data.split("_")[-1])
     book = await repository.get_book_by_id(book_id)
     
     if not book:
-        await query.message.reply_text("❌ خطأ: هذا الكتاب غير موجود.")
+        if query:
+            await query.edit_message_text("❌ خطأ: هذا الكتاب غير موجود.")
         return
 
-    # 1. تحديث الرسالة فوراً لحالة الجلب المباشر وإخفاء زر التحميل لمنع الضغط المكرر
-    loading_text = (
+    # 1. تحديث الرسالة فوراً لحالة التحميل وإخفاء زر التحميل لمنع التكرار
+    loading_caption = (
         f"📖 <b>{book['title']}</b>\n"
         f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
-        "⏳ <b>جاري تحضير وإرسال ملف الـ PDF... يرجى الانتظار لحظات</b>"
+        "⏳ <b>جاري تحضير وإرسال الملف... يرجى الانتظار</b>"
     )
-    loading_keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("⏳ جاري إرسال الملف...", callback_data="info_noop")]
-    ])
-    try:
-        await query.edit_message_text(loading_text, parse_mode="HTML", reply_markup=loading_keyboard)
-    except Exception:
-        pass
+    loading_kb = inline.InlineKeyboardMarkup([[inline.InlineKeyboardButton("⏳ جاري التحميل...", callback_data="info_noop")]])
+    if query:
+        try:
+            await query.edit_message_text(loading_caption, parse_mode="HTML", reply_markup=loading_kb)
+        except Exception:
+            pass
 
     caption = (
         f"📚 <b>{book['title']}</b>\n"
@@ -176,40 +180,39 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
     try:
         await context.bot.send_document(
-            chat_id=query.message.chat_id,
+            chat_id=query.message.chat_id if query and query.message else update.effective_chat.id,
             document=book['telegram_file_id'],
             caption=caption,
             parse_mode="HTML"
         )
-        await repository.record_download_log(book_id, query.from_user.id)
-        logger.info(f"تم إرسال الكتاب {book['id']} ({book['title']}) إلى {query.from_user.id}")
-
-        # 2. تحديث الكارت إلى حالة النجاح وإظهار زر العودة فقط
-        done_text = (
+        await repository.record_download_log(book_id, query.from_user.id if query and query.from_user else 0)
+        
+        # 2. تحديث الرسالة فوراً لحالة النجاح واستبدال الزر بشرط العودة للكتب
+        success_caption = (
             f"📖 <b>{book['title']}</b>\n"
             f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
-            "✅ <b>تم إرسال ملف الـ PDF بنجاح!</b>"
+            "✅ <b>تم إرسال ملف الـ PDF بنجاح</b>"
         )
-        done_keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{book['class_id']}")]
-        ])
-        try:
-            await query.edit_message_text(done_text, parse_mode="HTML", reply_markup=done_keyboard)
-        except Exception:
-            pass
-
+        success_kb = inline.InlineKeyboardMarkup([[inline.InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{book['class_id']}")]])
+        if query:
+            try:
+                await query.edit_message_text(success_caption, parse_mode="HTML", reply_markup=success_kb)
+            except Exception:
+                pass
+        logger.info(f"تم إرسال الكتاب {book['id']} ({book['title']}) بنجاح.")
     except Exception as e:
         logger.error(f"خطأ إرسال الملف: {e}")
-        error_text = (
+        error_caption = (
             f"📖 <b>{book['title']}</b>\n"
             f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
-            "❌ <b>تعذر إرسال الملف حالياً، يرجى المحاولة مرة أخرى.</b>"
+            "❌ <b>تعذر إرسال الملف، يرجى المحاولة لاحقاً.</b>"
         )
-        retry_keyboard = inline.get_book_details_keyboard(book_id, book['class_id'])
-        try:
-            await query.edit_message_text(error_text, parse_mode="HTML", reply_markup=retry_keyboard)
-        except Exception:
-            pass
+        error_kb = inline.InlineKeyboardMarkup([[inline.InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{book['class_id']}")]])
+        if query:
+            try:
+                await query.edit_message_text(error_caption, parse_mode="HTML", reply_markup=error_kb)
+            except Exception:
+                pass
 
 def register_user_handlers(app):
     app.add_handler(CommandHandler("start", start_handler))
