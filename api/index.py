@@ -53,8 +53,11 @@ async def ensure_bot_initialized():
             await init_db()
         except Exception as e:
             print(f"Error initializing DB in serverless: {e}", flush=True)
-        await bot_app.initialize()
-        await bot_app.start()
+        try:
+            await bot_app.initialize()
+            await bot_app.start()
+        except Exception as e:
+            print(f"Error starting bot_app: {e}", flush=True)
         bot_initialized = True
 
 async def execute_set_webhook():
@@ -73,7 +76,7 @@ async def execute_webhook(request: Request):
         await ensure_bot_initialized()
         update = Update.de_json(data, bot_app.bot)
         await bot_app.process_update(update)
-        await asyncio.sleep(1.2)
+        await asyncio.sleep(0.5)
         return {"status": "ok"}
     except Exception as e:
         print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
@@ -81,13 +84,16 @@ async def execute_webhook(request: Request):
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
 async def handle_routes(request: Request, full_path: str = ""):
+    path = request.url.path.lower()
     action = request.query_params.get("action", "").lower()
     
-    if action == "set_webhook":
+    if action == "set_webhook" or "set_webhook" in path or "set_webhook" in full_path:
         return await execute_set_webhook()
     
-    if action == "webhook" and request.method == "POST":
-        return await execute_webhook(request)
+    if action == "webhook" or "webhook" in path or "webhook" in full_path:
+        if request.method == "POST":
+            return await execute_webhook(request)
+        return {"status": "ok", "message": "Webhook endpoint active"}
         
     return {
         "status": "ok",
