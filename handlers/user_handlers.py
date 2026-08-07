@@ -167,7 +167,7 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
             caption=caption,
             parse_mode="HTML"
         )
-        await repository.increment_book_download_count(book_id)
+        await repository.record_download_log(book_id, query.from_user.id)
         logger.info(f"تم إرسال الكتاب {book['id']} ({book['title']}) إلى {query.from_user.id}")
     except Exception as e:
         logger.error(f"خطأ إرسال الملف: {e}")

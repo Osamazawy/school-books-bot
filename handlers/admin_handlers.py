@@ -57,54 +57,81 @@ async def admin_panel_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text(text, parse_mode="HTML", reply_markup=inline.get_admin_main_keyboard())
 
 
-async def admin_stats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def render_filtered_stats(update: Update, context: ContextTypes.DEFAULT_TYPE, timeframe: str = "all", custom_start: Optional[str] = None, custom_end: Optional[str] = None) -> None:
     if not await check_admin(update):
         return
-        
+
     query = update.callback_query
     if query:
         try:
             await query.answer()
         except Exception:
             pass
-    
+
+    if timeframe == "custom" and not custom_start:
+        context.user_data['admin_action'] = 'custom_stats_date'
+        prompt_text = (
+            "🔍 <b>استخراج إحصائيات بمدى تاريخ مخصص</b>\n\n"
+            "أرسل تاريخ البداية والنهاية في رسالة (مثال: <code>2026-08-01 إلى 2026-08-07</code>) أو تاريخ واحد (مثال: <code>2026-08-01</code>):"
+        )
+        if query:
+            await safe_edit_message(query, prompt_text, reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ إلغاء", callback_data="admin_stats")]]))
+        elif update.message:
+            await update.message.reply_text(prompt_text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("❌ إلغاء", callback_data="admin_stats")]]))
+        return
+
     try:
-        users_cnt = await repository.get_users_count()
-        stages_cnt = await repository.get_stages_count()
-        classes_cnt = await repository.get_classes_count()
-        books_cnt = await repository.get_books_count()
-        total_downloads = await repository.get_total_downloads_count()
-        breakdown = await repository.get_stage_breakdown()
-        top_books = await repository.get_top_downloaded_books(limit=5)
+        data = await repository.get_filtered_stats(timeframe=timeframe, custom_start=custom_start, custom_end=custom_end)
         
-        breakdown_text = ""
-        for item in breakdown:
-            breakdown_text += f"   • {item['stage_name']}: {item['books_cnt']} كتاب\n"
+        label_map = {
+            "today": "📅 إحصائيات اليوم",
+            "7days": "🗓️ إحصائيات آخر 7 أيام",
+            "30days": "📊 إحصائيات آخر 30 يوماً",
+            "all": "🌐 التجميع الكلي الشامل",
+            "custom": f"🔍 مدى مخصص ({custom_start} إلى {custom_end if custom_end else 'الآن'})"
+        }
+        period_label = label_map.get(timeframe, "الإحصائيات الشاملة")
+
+        stage_pct_text = ""
+        if data["stage_percentages"]:
+            stage_pct_text = "\n📊 <b>توزيع التفاعل والتنزيلات حسب المراحل:</b>\n"
+            for sp in data["stage_percentages"]:
+                stage_pct_text += f"   • {sp['stage_name']}: {sp['pct']}% ({sp['count']} تنزيل)\n"
 
         top_books_text = ""
-        if top_books:
-            top_books_text = "\n🔥 <b>الكتب الأكثر تحميلاً:</b>\n"
-            for tb in top_books:
-                top_books_text += f"   • 📖 <b>{tb['title']}</b> ({tb['class_name']}): {tb['downloads_count']} مرة\n"
+        if data["top_books"]:
+            top_books_text = "\n🔥 <b>الكتب الأكثر تحميلاً في هذه الفترة:</b>\n"
+            for idx, tb in enumerate(data["top_books"], 1):
+                top_books_text += f"   {idx}. 📖 <b>{tb['title']}</b> ({tb['class_name']}): {tb['downloads_count']} مرة\n"
+
+        new_users_str = f" (+{data['new_users_cnt']} جديد)" if data['new_users_cnt'] > 0 else ""
 
         stats_text = (
-            "📊 <b>الإحصائيات الشاملة للنظام</b>\n\n"
-            f"👥 <b>إجمالي المشتركين:</b> {users_cnt}\n"
-            f"🏛️ <b>عدد المراحل:</b> {stages_cnt}\n"
-            f"🎓 <b>عدد الصفوف:</b> {classes_cnt}\n"
-            f"📚 <b>إجمالي الكتب المرفوعة:</b> {books_cnt}\n"
-            f"📥 <b>إجمالي عمليات التحميل:</b> {total_downloads}\n\n"
-            f"📋 <b>توزيع الكتب حسب المراحل:</b>\n{breakdown_text if breakdown_text else '   لا توجد كتب حالياً.'}"
+            f"📊 <b>لوحة تحليلات النظام ({period_label})</b>\n\n"
+            f"👥 <b>إجمالي المشتركين:</b> {data['users_cnt']}{new_users_str}\n"
+            f"🏛️ <b>المراحل والصفوف:</b> {data['stages_cnt']} مرحلة | {data['classes_cnt']} صفاً\n"
+            f"📚 <b>إجمالي الكتب المرفوعة:</b> {data['books_cnt']} كتاباً\n"
+            f"📥 <b>تنزيلات هذه الفترة:</b> {data['period_downloads']} تحميل\n"
+            f"{stage_pct_text}"
             f"{top_books_text}"
         )
     except Exception as e:
         logger.error(f"خطأ أثناء جلب الإحصائيات: {e}")
         stats_text = f"❌ <b>حدث خطأ أثناء جلب الإحصائيات:</b>\n<code>{e}</code>"
-    
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")]
-    ])
-    await safe_edit_message(query, stats_text, reply_markup=keyboard)
+
+    keyboard = inline.get_admin_stats_keyboard(active_tf=timeframe)
+    if query:
+        await safe_edit_message(query, stats_text, reply_markup=keyboard)
+    elif update.message:
+        await update.message.reply_text(stats_text, parse_mode="HTML", reply_markup=keyboard)
+
+
+async def admin_stats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    tf = "all"
+    if query and query.data.startswith("stats_tf_"):
+        tf = query.data.replace("stats_tf_", "")
+    await render_filtered_stats(update, context, timeframe=tf)
 
 
 # ==================== الإذاعة والإعلانات للطلاب (Broadcast) ====================
@@ -452,6 +479,19 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not action.startswith('upload_book_'):
         context.user_data.pop('admin_action', None)
 
+    if action == 'custom_stats_date':
+        text_val = update.message.text.strip() if update.message and update.message.text else ""
+        parts = text_val.replace("إلى", " ").replace("to", " ").replace(",", " ").split()
+        if len(parts) >= 2:
+            start_date, end_date = parts[0], parts[1]
+            await render_filtered_stats(update, context, timeframe="custom", custom_start=start_date, custom_end=end_date)
+        elif len(parts) == 1:
+            start_date = parts[0]
+            await render_filtered_stats(update, context, timeframe="custom", custom_start=start_date, custom_end=None)
+        else:
+            await update.message.reply_text("⚠️ يرجى إرسال التواريخ بصيغة صحيحة (مثال: <code>2026-08-01 إلى 2026-08-07</code>)", parse_mode="HTML")
+        return
+
     if action == 'broadcast':
         await send_broadcast(update, context)
         return
@@ -580,7 +620,7 @@ async def exec_delete_all_class_books(update: Update, context: ContextTypes.DEFA
 def register_admin_handlers(app):
     app.add_handler(CommandHandler("admin", admin_panel_handler, filters=IS_ADMIN))
     app.add_handler(CallbackQueryHandler(admin_panel_handler, pattern="^admin_panel$"))
-    app.add_handler(CallbackQueryHandler(admin_stats_handler, pattern="^admin_stats$"))
+    app.add_handler(CallbackQueryHandler(admin_stats_handler, pattern="^(admin_stats|stats_tf_.+)$"))
     app.add_handler(CallbackQueryHandler(admin_manage_curriculum, pattern="^adm_manage_curriculum$"))
 
     # التنقل المباشر والسريع

@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Optional
+import datetime
 from database.connection import get_db_connection
 
 def _val(row, key_or_idx=0):
@@ -279,3 +280,171 @@ async def get_stage_breakdown() -> List[Dict[str, Any]]:
         """) as cursor:
             rows = await cursor.fetchall()
             return [_dict(row) for row in rows]
+
+async def record_download_log(book_id: int, telegram_id: Optional[int] = None) -> None:
+    """تسجيل عملية التحميل في السجل مع زيادة العداد والتدوير التلقائي للسجلات لآخر 90 يوماً."""
+    async with get_db_connection() as db:
+        await db.execute("UPDATE books SET downloads_count = COALESCE(downloads_count, 0) + 1 WHERE id = ?;", (book_id,))
+        await db.execute("INSERT INTO download_logs (book_id, telegram_id) VALUES (?, ?);", (book_id, telegram_id))
+        try:
+            cutoff = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=90)).strftime("%Y-%m-%d %H:%M:%S")
+            await db.execute("DELETE FROM download_logs WHERE downloaded_at < ?;", (cutoff,))
+        except Exception:
+            pass
+        await db.commit()
+
+async def get_filtered_stats(timeframe: str = "all", custom_start: Optional[str] = None, custom_end: Optional[str] = None) -> Dict[str, Any]:
+    """استرجاع الإحصائيات الشاملة مفلترة حسب الفترة الزمنية (اليوم، 7 أيام، 30 يوماً، أو تاريخ مخصص)."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    start_dt = None
+    end_dt = None
+    
+    if timeframe == "today":
+        start_dt = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif timeframe == "7days":
+        start_dt = now - datetime.timedelta(days=7)
+    elif timeframe == "30days":
+        start_dt = now - datetime.timedelta(days=30)
+    elif timeframe == "custom" and custom_start:
+        try:
+            start_dt = datetime.datetime.strptime(custom_start.strip(), "%Y-%m-%d").replace(tzinfo=datetime.timezone.utc)
+            if custom_end:
+                end_dt = datetime.datetime.strptime(custom_end.strip(), "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=datetime.timezone.utc)
+        except Exception:
+            start_dt = None
+            end_dt = None
+
+    async with get_db_connection() as db:
+        users_cnt = await get_users_count()
+        stages_cnt = await get_stages_count()
+        classes_cnt = await get_classes_count()
+        books_cnt = await get_books_count()
+
+        new_users_cnt = 0
+        if start_dt:
+            start_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
+            if end_dt:
+                end_str = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+                async with db.execute("SELECT COUNT(*) FROM users WHERE join_date >= ? AND join_date <= ?;", (start_str, end_str)) as cursor:
+                    new_users_cnt = _val(await cursor.fetchone(), 0) or 0
+            else:
+                async with db.execute("SELECT COUNT(*) FROM users WHERE join_date >= ?;", (start_str,)) as cursor:
+                    new_users_cnt = _val(await cursor.fetchone(), 0) or 0
+
+        period_downloads = 0
+        if start_dt:
+            start_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
+            if end_dt:
+                end_str = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+                async with db.execute("SELECT COUNT(*) FROM download_logs WHERE downloaded_at >= ? AND downloaded_at <= ?;", (start_str, end_str)) as cursor:
+                    period_downloads = _val(await cursor.fetchone(), 0) or 0
+            else:
+                async with db.execute("SELECT COUNT(*) FROM download_logs WHERE downloaded_at >= ?;", (start_str,)) as cursor:
+                    period_downloads = _val(await cursor.fetchone(), 0) or 0
+        else:
+            period_downloads = await get_total_downloads_count()
+
+        top_books = []
+        if start_dt:
+            start_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
+            if end_dt:
+                end_str = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+                sql = """
+                    SELECT b.id, b.title, COUNT(dl.id) as downloads_count,
+                           c.name as class_name, st.name as stage_name
+                    FROM download_logs dl
+                    JOIN books b ON dl.book_id = b.id
+                    JOIN classes c ON b.class_id = c.id
+                    JOIN stages st ON c.stage_id = st.id
+                    WHERE dl.downloaded_at >= ? AND dl.downloaded_at <= ?
+                    GROUP BY b.id, b.title, c.name, st.name
+                    ORDER BY downloads_count DESC LIMIT 5;
+                """
+                params = (start_str, end_str)
+            else:
+                sql = """
+                    SELECT b.id, b.title, COUNT(dl.id) as downloads_count,
+                           c.name as class_name, st.name as stage_name
+                    FROM download_logs dl
+                    JOIN books b ON dl.book_id = b.id
+                    JOIN classes c ON b.class_id = c.id
+                    JOIN stages st ON c.stage_id = st.id
+                    WHERE dl.downloaded_at >= ?
+                    GROUP BY b.id, b.title, c.name, st.name
+                    ORDER BY downloads_count DESC LIMIT 5;
+                """
+                params = (start_str,)
+            async with db.execute(sql, params) as cursor:
+                top_books = [_dict(r) for r in await cursor.fetchall()]
+        else:
+            top_books = await get_top_downloaded_books(limit=5)
+
+        stage_percentages = []
+        if start_dt:
+            start_str = start_dt.strftime("%Y-%m-%d %H:%M:%S")
+            if end_dt:
+                end_str = end_dt.strftime("%Y-%m-%d %H:%M:%S")
+                sql = """
+                    SELECT st.name as stage_name, COUNT(dl.id) as dl_cnt
+                    FROM download_logs dl
+                    JOIN books b ON dl.book_id = b.id
+                    JOIN classes c ON b.class_id = c.id
+                    JOIN stages st ON c.stage_id = st.id
+                    WHERE dl.downloaded_at >= ? AND dl.downloaded_at <= ?
+                    GROUP BY st.id, st.name ORDER BY st.id ASC;
+                """
+                params = (start_str, end_str)
+            else:
+                sql = """
+                    SELECT st.name as stage_name, COUNT(dl.id) as dl_cnt
+                    FROM download_logs dl
+                    JOIN books b ON dl.book_id = b.id
+                    JOIN classes c ON b.class_id = c.id
+                    JOIN stages st ON c.stage_id = st.id
+                    WHERE dl.downloaded_at >= ?
+                    GROUP BY st.id, st.name ORDER BY st.id ASC;
+                """
+                params = (start_str,)
+            async with db.execute(sql, params) as cursor:
+                rows = await cursor.fetchall()
+                total_dl = sum([_val(r, 'dl_cnt') or 0 for r in rows])
+                for r in rows:
+                    cnt = _val(r, 'dl_cnt') or 0
+                    pct = round((cnt / total_dl * 100), 1) if total_dl > 0 else 0
+                    stage_percentages.append({
+                        "stage_name": _val(r, 'stage_name'),
+                        "count": cnt,
+                        "pct": pct
+                    })
+        else:
+            async with db.execute("""
+                SELECT st.name as stage_name, SUM(COALESCE(b.downloads_count, 0)) as dl_cnt
+                FROM stages st
+                LEFT JOIN classes c ON c.stage_id = st.id
+                LEFT JOIN books b ON b.class_id = c.id
+                GROUP BY st.id, st.name ORDER BY st.id ASC;
+            """) as cursor:
+                rows = await cursor.fetchall()
+                total_dl = sum([_val(r, 'dl_cnt') or 0 for r in rows])
+                for r in rows:
+                    cnt = _val(r, 'dl_cnt') or 0
+                    pct = round((cnt / total_dl * 100), 1) if total_dl > 0 else 0
+                    stage_percentages.append({
+                        "stage_name": _val(r, 'stage_name'),
+                        "count": cnt,
+                        "pct": pct
+                    })
+
+        return {
+            "users_cnt": users_cnt,
+            "new_users_cnt": new_users_cnt,
+            "stages_cnt": stages_cnt,
+            "classes_cnt": classes_cnt,
+            "books_cnt": books_cnt,
+            "period_downloads": period_downloads,
+            "top_books": top_books,
+            "stage_percentages": stage_percentages,
+            "timeframe": timeframe,
+            "custom_start": custom_start,
+            "custom_end": custom_end
+        }

@@ -179,7 +179,7 @@ async def init_db():
                     conn.rollback()
                     logger.error(f"خطأ أثناء حذف subjects: {e}")
 
-                # 3. إنشاء جدول الكتب والمستخدمين
+                # 3. إنشاء جدول الكتب والمستخدمين وسجلات التنزيل
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS books (
                         id SERIAL PRIMARY KEY,
@@ -196,6 +196,14 @@ async def init_db():
                         full_name TEXT,
                         join_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
+                    CREATE TABLE IF NOT EXISTS download_logs (
+                        id SERIAL PRIMARY KEY,
+                        book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+                        telegram_id BIGINT,
+                        downloaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_download_logs_date ON download_logs(downloaded_at);
+                    CREATE INDEX IF NOT EXISTS idx_download_logs_book ON download_logs(book_id);
                 """)
                 conn.commit()
 
@@ -265,6 +273,17 @@ async def init_db():
                     join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS download_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    book_id INTEGER NOT NULL,
+                    telegram_id INTEGER,
+                    downloaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+                );
+            """)
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_download_logs_date ON download_logs(downloaded_at);")
+            await db.execute("CREATE INDEX IF NOT EXISTS idx_download_logs_book ON download_logs(book_id);")
             await db.commit()
 
             # إضافة الأعمدة الجديدة لـ SQLite إن لم تكن موجودة

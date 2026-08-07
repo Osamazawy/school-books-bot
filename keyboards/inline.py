@@ -119,6 +119,33 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
+def get_admin_stats_keyboard(active_tf: str = "all") -> InlineKeyboardMarkup:
+    """كيبورد أزرار الفلترة الزمنية للإحصائيات للآدمن."""
+    b_today = "🔘 اليوم" if active_tf == "today" else "📅 اليوم"
+    b_7days = "🔘 7 أيام" if active_tf == "7days" else "🗓️ آخر 7 أيام"
+    b_30days = "🔘 30 يوماً" if active_tf == "30days" else "📊 آخر 30 يوماً"
+    b_all = "🔘 التجميع الكلي" if active_tf == "all" else "🌐 التجميع الكلي"
+    b_custom = "🔘 مدى مخصص" if active_tf == "custom" else "🔍 مدى تاريخ مخصص"
+
+    keyboard = [
+        [
+            InlineKeyboardButton(b_today, callback_data="stats_tf_today"),
+            InlineKeyboardButton(b_7days, callback_data="stats_tf_7days")
+        ],
+        [
+            InlineKeyboardButton(b_30days, callback_data="stats_tf_30days"),
+            InlineKeyboardButton(b_all, callback_data="stats_tf_all")
+        ],
+        [
+            InlineKeyboardButton(b_custom, callback_data="stats_tf_custom")
+        ],
+        [
+            InlineKeyboardButton("↩️ لوحة التحكم", callback_data="admin_panel")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
 def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: int, stage_id: int = 1) -> InlineKeyboardMarkup:
     """عرض كتب الصف للآدمن."""
     keyboard = []
