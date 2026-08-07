@@ -11,7 +11,7 @@ STAGE_PALETTES = [
 
 
 def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], is_admin: bool = False) -> InlineKeyboardMarkup:
-    """عرض الشاشة الموحدة للمراحل والصفوف بمربعات ملونة مخصصة لكل مرحلة."""
+    """عرض الشاشة الموحدة للمراحل والصفوف بمربعات ملونة مخصصة لكل مرحلة (للطلاب والمشرفين)."""
     keyboard = []
     
     for idx, item in enumerate(stages_with_classes):
@@ -24,11 +24,12 @@ def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], i
         header_text = f"{h_icon} {stage['name']} {h_icon}"
         keyboard.append([InlineKeyboardButton(header_text, callback_data="info_noop")])
         
-        # أزرار الصفوف باسم الصف فقط بدون رموز
+        # أزرار الصفوف باسم الصف فقط (للآدمن تذهب لكارت التحكم adm_view_bks_ وللطالب تذهب لصفحة الكتب user_class_)
         row = []
         for cls in classes:
             btn_text = cls['name'].strip()
-            btn = InlineKeyboardButton(btn_text, callback_data=f"user_class_{cls['id']}")
+            callback_data = f"adm_view_bks_{cls['id']}" if is_admin else f"user_class_{cls['id']}"
+            btn = InlineKeyboardButton(btn_text, callback_data=callback_data)
             row.append(btn)
             if len(row) == 2:
                 keyboard.append(row[::-1])
@@ -37,7 +38,11 @@ def get_stages_and_classes_keyboard(stages_with_classes: List[Dict[str, Any]], i
             keyboard.append(row[::-1])
 
     if is_admin:
-        keyboard.append([InlineKeyboardButton("⚙️ لوحة التحكم", callback_data="admin_panel")])
+        keyboard.append([InlineKeyboardButton("❇️ إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
+        keyboard.append([InlineKeyboardButton("↩️ لوحة التحكم", callback_data="admin_panel")])
+    else:
+        keyboard.append([InlineKeyboardButton("🏠 القائمة الرئيسية", callback_data="main_menu")])
+        
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -114,53 +119,6 @@ def get_admin_main_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
-def get_admin_stages_list_keyboard(stages: List[Dict[str, Any]]) -> InlineKeyboardMarkup:
-    """عرض عناصر المراحل للآدمن."""
-    keyboard = []
-    use_grid = len(stages) >= 4
-    row = []
-    for s in stages:
-        btn = InlineKeyboardButton(f"📊 {s['name']}", callback_data=f"adm_view_cls_{s['id']}")
-        if use_grid:
-            row.append(btn)
-            if len(row) == 2:
-                keyboard.append(row[::-1])
-                row = []
-        else:
-            keyboard.append([btn])
-    if use_grid and row:
-        keyboard.append(row[::-1])
-    keyboard.append([InlineKeyboardButton("❇️ إضافة مرحلة جديدة", callback_data="adm_add_stage_new")])
-    keyboard.append([InlineKeyboardButton("↩️ لوحة التحكم", callback_data="admin_panel")])
-    return InlineKeyboardMarkup(keyboard)
-
-
-def get_admin_classes_list_keyboard(classes: List[Dict[str, Any]], stage_id: int) -> InlineKeyboardMarkup:
-    """عرض عناصر الصفوف للآدمن."""
-    keyboard = []
-    use_grid = len(classes) >= 4
-    row = []
-    for c in classes:
-        btn = InlineKeyboardButton(f"📋 {c['name']}", callback_data=f"adm_view_bks_{c['id']}")
-        if use_grid:
-            row.append(btn)
-            if len(row) == 2:
-                keyboard.append(row[::-1])
-                row = []
-        else:
-            keyboard.append([btn])
-    if use_grid and row:
-        keyboard.append(row[::-1])
-
-    keyboard.append([InlineKeyboardButton("❇️ إضافة صف جديد", callback_data=f"adm_add_cls_batch_{stage_id}")])
-    keyboard.append([
-        InlineKeyboardButton("✏️ تعديل الاسم", callback_data=f"adm_ren_stg_{stage_id}"),
-        InlineKeyboardButton("🗑️ حذف المرحلة", callback_data=f"adm_del_stg_confirm_{stage_id}")
-    ])
-    keyboard.append([InlineKeyboardButton("↩️ قائمة المراحل", callback_data="adm_manage_curriculum")])
-    return InlineKeyboardMarkup(keyboard)
-
-
 def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: int, stage_id: int = 1) -> InlineKeyboardMarkup:
     """عرض كتب الصف للآدمن."""
     keyboard = []
@@ -173,7 +131,7 @@ def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: i
         InlineKeyboardButton("🗑️ حذف الكتب", callback_data=f"adm_del_all_bks_confirm_{class_id}"),
         InlineKeyboardButton("🗑️ حذف هذا الصف بالكامل", callback_data=f"adm_del_cls_confirm_{class_id}")
     ])
-    keyboard.append([InlineKeyboardButton("↩️ قائمة الصفوف", callback_data=f"adm_view_cls_{stage_id}")])
+    keyboard.append([InlineKeyboardButton("↩️ قائمة المناهج والصفوف", callback_data="adm_manage_curriculum")])
     return InlineKeyboardMarkup(keyboard)
 
 

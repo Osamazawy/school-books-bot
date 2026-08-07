@@ -186,13 +186,13 @@ async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_
             pass
 
     try:
-        stages = await repository.get_all_stages()
-        text = "🏛️ <b>إدارة المراحل والصفوف والمناهج</b>\nاختر المرحلة الدراسية للتنقل المباشر:"
-        reply_markup = inline.get_admin_stages_list_keyboard(stages)
+        stages_with_classes = await repository.get_all_stages_with_classes()
+        text = "🎓 <b>إدارة المناهج والصفوف الدراسية</b>\nيرجى اختيار الصف المطلوب للتحكم بكتبه ومناهجه:"
+        reply_markup = inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=True)
     except Exception as e:
-        logger.error(f"خطأ جلب المراحل: {e}")
-        text = f"❌ <b>حدث خطأ أثناء جلب المراحل:</b>\n<code>{e}</code>"
-        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 لوحة التحكم", callback_data="admin_panel")]])
+        logger.error(f"خطأ جلب المراحل والصفوف للآدمن: {e}")
+        text = f"❌ <b>حدث خطأ أثناء جلب المناهج والصفوف:</b>\n<code>{e}</code>"
+        reply_markup = InlineKeyboardMarkup([[InlineKeyboardButton("↩️ لوحة التحكم", callback_data="admin_panel")]])
 
     await safe_edit_message(query, text, reply_markup=reply_markup)
 
@@ -238,7 +238,7 @@ async def confirm_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYP
     stage = await repository.get_stage_by_id(stage_id)
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("⚠️ نعم، تأكيد الحذف النهائي", callback_data=f"adm_del_stg_exec_{stage_id}")],
-        [InlineKeyboardButton("❌ إلغاء", callback_data=f"adm_view_cls_{stage_id}")]
+        [InlineKeyboardButton("❌ إلغاء", callback_data="adm_manage_curriculum")]
     ])
     await safe_edit_message(query, f"⚠️ <b>هل أنت تأكد من حذف مرحلة: {stage['name'] if stage else ''}؟</b>\nسيتم حذف كافة الصفوف والكتب التابعة لها أيضاً!", reply_markup=keyboard)
 
@@ -260,18 +260,7 @@ async def exec_delete_stage(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 # ==================== 2. المستوى الثاني: إدارة الصفوف والكتب المباشرة ====================
 
 async def view_classes_list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not await check_admin(update):
-        return
-    query = update.callback_query
-    if query:
-        try:
-            await query.answer()
-        except Exception:
-            pass
-    stage_id = int(query.data.split("_")[-1])
-    stage = await repository.get_stage_by_id(stage_id)
-    classes = await repository.get_classes_by_stage(stage_id)
-    await safe_edit_message(query, f"🎓 <b>صفوف مرحلة: {stage['name'] if stage else ''}</b>\nاختر الصف لتصفح وإدارة كتبه مباشرة:", reply_markup=inline.get_admin_classes_list_keyboard(classes, stage_id))
+    await admin_manage_curriculum(update, context)
 
 
 async def start_add_class_batch(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
