@@ -49,7 +49,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer("🎓 جاري عرض الصفوف...")
+    await query.answer()
     user = update.effective_user
     is_admin = user.id in ADMIN_IDS if user else False
     stages_with_classes = await repository.get_all_stages_with_classes()
@@ -70,11 +70,11 @@ async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 async def info_noop_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     if query:
-        await query.answer("📌 هذا عنوان المرحلة الدراسية، يرجى اختيار الصف التابع لها أدناه.")
+        await query.answer()
 
 async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer("🎓 جاري عرض الصفوف...")
+    await query.answer()
     
     stage_id = int(query.data.split("_")[-1])
     stage = await repository.get_stage_by_id(stage_id)
@@ -99,7 +99,7 @@ async def list_classes_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 async def list_books_for_class_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """عرض الكتب التابعة للصف مباشرة عند الاختيار."""
     query = update.callback_query
-    await query.answer("📘 جاري جلب الكتب...")
+    await query.answer()
     
     class_id = int(query.data.split("_")[-1])
     cls = await repository.get_class_by_id(class_id)
@@ -124,7 +124,7 @@ async def list_books_for_class_handler(update: Update, context: ContextTypes.DEF
 
 async def view_book_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
-    await query.answer("📖 جاري تجهيز صفحة الكتاب...")
+    await query.answer()
     
     book_id = int(query.data.split("_")[-1])
     book = await repository.get_book_by_id(book_id)
