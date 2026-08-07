@@ -560,8 +560,8 @@ async def handle_admin_input(update: Update, context: ContextTypes.DEFAULT_TYPE)
             file_id = file_obj.file_id
             title = file_obj.file_name or msg.caption or "كتاب دراسي"
             await repository.add_book_for_class(class_id, title, "", file_id)
-            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("↩️  قائمة كتب الصف", callback_data=f"adm_view_bks_{class_id}")]])
-            await msg.reply_text(f"✅ تم رفع كتاب: <b>{title}</b> بنجاح!\n<i>يمكنك إرسال باقي الكتب أو الضغط على قائمة كتب الصف عند الانتهاء.</i>", parse_mode="HTML", reply_markup=keyboard)
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("↩️ قائمة الكتب", callback_data=f"adm_view_bks_{class_id}")]])
+            await msg.reply_text(f"✅ تم رفع كتاب: <b>{title}</b> بنجاح!\n<i>يمكنك إرسال باقي الكتب أو الضغط على قائمة الكتب عند الانتهاء.</i>", parse_mode="HTML", reply_markup=keyboard)
         else:
             await msg.reply_text("⚠️ يرجى إرسال ملف الـ PDF كملف مرفق.")
         return

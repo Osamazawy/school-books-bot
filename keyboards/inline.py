@@ -168,6 +168,6 @@ def get_admin_single_book_card_keyboard(book_id: int, class_id: int) -> InlineKe
             InlineKeyboardButton("✏️ تعديل العنوان", callback_data=f"adm_ren_bk_{book_id}"),
             InlineKeyboardButton("🗑️ حذف الكتاب", callback_data=f"adm_del_bk_confirm_{book_id}")
         ],
-        [InlineKeyboardButton("↩️ قائمة كتب الصف", callback_data=f"adm_view_bks_{class_id}")]
+        [InlineKeyboardButton("↩️ قائمة الكتب", callback_data=f"adm_view_bks_{class_id}")]
     ]
     return InlineKeyboardMarkup(keyboard)
