@@ -173,8 +173,8 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
             pass
 
     caption = (
-        f"📚 <b>{book['title']}</b>\n"
-        f"🏛️ {book['stage_name']} - 🎓 {book['class_name']}"
+        f"✅ <b>{book['title']}</b>\n"
+        f"✅ <b>الصف:</b> {book['class_name']}"
     )
 
     try:
