@@ -1,3 +1,4 @@
+from typing import Optional
 import asyncio
 import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
