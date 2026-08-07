@@ -156,7 +156,7 @@ def get_admin_class_books_list_keyboard(books: List[Dict[str, Any]], class_id: i
         InlineKeyboardButton("🗑️ حذف الكتب", callback_data=f"adm_del_all_bks_confirm_{class_id}"),
         InlineKeyboardButton("🗑️ حذف هذا الصف بالكامل", callback_data=f"adm_del_cls_confirm_{class_id}")
     ])
-    keyboard.append([InlineKeyboardButton("↩️ قائمة المناهج والصفوف", callback_data="adm_manage_curriculum")])
+    keyboard.append([InlineKeyboardButton("↩️ القائمة الرئيسية", callback_data="adm_manage_curriculum")])
     return InlineKeyboardMarkup(keyboard)
 
 
