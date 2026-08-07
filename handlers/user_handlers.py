@@ -12,10 +12,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     is_admin = user.id in ADMIN_IDS
     stages_with_classes = await repository.get_all_stages_with_classes()
-    welcome_text = (
-        f"مرحباً بك يا <b>{user.first_name}</b> في بوت المناهج والكتب الدراسية 📚✨\n\n"
-        "اختر <b>الصف الدراسي</b> المطلوب أدناه لتحميل مناهجه وكتبه فوراً بصيغة PDF:"
-    )
+    welcome_text = f"مرحباً بك يا <b>{user.first_name}</b> في بوت المناهج والكتب الدراسية 📚✨"
     
     keyboard = inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=is_admin)
     if update.message:
@@ -45,7 +42,7 @@ async def main_menu_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     stages_with_classes = await repository.get_all_stages_with_classes()
     
     await query.edit_message_text(
-        "🎓 <b>المناهج والصفوف الدراسية</b>\nيرجى اختيار الصف المطلوب من القائمة أدناه:",
+        "🎓 <b>المناهج والصفوف الدراسية</b>",
         parse_mode="HTML",
         reply_markup=inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=is_admin)
     )
@@ -65,7 +62,7 @@ async def list_stages_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     await query.edit_message_text(
-        "🎓 <b>المناهج والصفوف الدراسية</b>\nاختر الصف الدراسي لعرض كتبه المتاحة:",
+        "🎓 <b>المناهج والصفوف الدراسية</b>",
         parse_mode="HTML",
         reply_markup=inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=is_admin)
     )

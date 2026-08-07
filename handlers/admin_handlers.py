@@ -187,7 +187,7 @@ async def admin_manage_curriculum(update: Update, context: ContextTypes.DEFAULT_
 
     try:
         stages_with_classes = await repository.get_all_stages_with_classes()
-        text = "🎓 <b>إدارة المناهج والصفوف الدراسية</b>\nيرجى اختيار الصف المطلوب للتحكم بكتبه ومناهجه:"
+        text = "🎓 <b>إدارة المناهج والصفوف الدراسية</b>"
         reply_markup = inline.get_stages_and_classes_keyboard(stages_with_classes, is_admin=True)
     except Exception as e:
         logger.error(f"خطأ جلب المراحل والصفوف للآدمن: {e}")
