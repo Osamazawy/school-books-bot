@@ -389,11 +389,14 @@ async def view_single_book_card(update: Update, context: ContextTypes.DEFAULT_TY
     if not book:
         await safe_edit_message(query, "❌ الكتاب غير موجود.")
         return
+    dl_cnt = book.get('downloads_count', 0)
     text = (
         f"📘 <b>كارت إدارة كتاب مفرد</b>\n\n"
         f"📌 <b>العنوان:</b> {book['title']}\n"
-        f"🏛️ <b>المرحلة والصف:</b> {book['stage_name']} - {book['class_name']}\n"
-        f"🆔 <b>file_id:</b> <code>{book['telegram_file_id']}</code>"
+        f"🏛️ <b>المرحلة:</b> {book['stage_name']}\n"
+        f"🎓 <b>الصف:</b> {book['class_name']}\n"
+        f"📥 <b>عدد التحميلات:</b> {dl_cnt} مرة\n"
+        f"✅ <b>حالة الملف:</b> مرفق ومحفوظ بنجاح"
     )
     await safe_edit_message(query, text, reply_markup=inline.get_admin_single_book_card_keyboard(book_id, book['class_id']))
 
