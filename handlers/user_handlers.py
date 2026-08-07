@@ -160,10 +160,10 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
             await query.edit_message_text("❌ خطأ: هذا الكتاب غير موجود.")
         return
 
-    # تحديث البطاقة واستبدال زر التحميل بزر العودة لمنع التكرار
+    # تحديث البطاقة واستبدال زر التحميل بزر العودة ووضع علامة الصح ✅ بجوار العنوان والصف
     success_caption = (
-        f"📖 <b>{book['title']}</b>\n"
-        f"🎓 <b>الصف:</b> {book['class_name']}"
+        f"✅ <b>{book['title']}</b>\n"
+        f"✅ <b>الصف:</b> {book['class_name']}"
     )
     success_kb = inline.InlineKeyboardMarkup([[inline.InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{book['class_id']}")]])
     if query:
