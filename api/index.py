@@ -82,17 +82,51 @@ async def execute_webhook(request: Request):
         print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
         return {"status": "error", "message": str(e)}
 
+@app.get("/")
+@app.get("/api")
+async def root():
+    return {"status": "ok", "message": "School Books Bot API is active"}
+
+@app.get("/set_webhook")
+@app.get("/api/set_webhook")
+async def set_webhook_route(request: Request):
+    try:
+        clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
+        if not clean_webhook_url:
+            return {"error": "WEBHOOK_URL environment variable is missing"}
+        
+        await ensure_bot_initialized()
+        target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
+        success = await bot_app.bot.set_webhook(url=target_url)
+        return {"success": success, "webhook_url": target_url}
+    except Exception as e:
+        print(f"Error setting webhook: {e}\n{traceback.format_exc()}", flush=True)
+        return {"success": False, "error": str(e)}
+
+@app.post("/webhook")
+@app.post("/api/webhook")
+async def webhook_route(request: Request):
+    try:
+        data = await request.json()
+        await ensure_bot_initialized()
+        update = Update.de_json(data, bot_app.bot)
+        await bot_app.process_update(update)
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"Error handling Telegram webhook update: {e}\n{traceback.format_exc()}", flush=True)
+        return {"status": "error", "message": str(e)}
+
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "HEAD", "OPTIONS"])
-async def handle_routes(request: Request, full_path: str = ""):
+async def fallback_route(request: Request, full_path: str = ""):
     path = request.url.path.lower()
     action = request.query_params.get("action", "").lower()
     
     if action == "set_webhook" or "set_webhook" in path or "set_webhook" in full_path:
-        return await execute_set_webhook()
+        return await set_webhook_route(request)
     
     if action == "webhook" or "webhook" in path or "webhook" in full_path:
         if request.method == "POST":
-            return await execute_webhook(request)
+            return await webhook_route(request)
         return {"status": "ok", "message": "Webhook endpoint active"}
         
     return {
