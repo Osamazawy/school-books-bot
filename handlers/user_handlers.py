@@ -172,10 +172,7 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
         except Exception:
             pass
 
-    caption = (
-        f"✅ <b>الصف:</b> {book['class_name']}\n"
-        f"✅ <b>{book['title']}</b>"
-    )
+    caption = f"✅ <b>الصف:</b> {book['class_name']}"
 
     try:
         await context.bot.send_document(
