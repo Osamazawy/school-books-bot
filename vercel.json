@@ -1,24 +1,14 @@
 {
-  "rewrites": [
+  "builds": [
     {
-      "source": "/set_webhook",
-      "destination": "/api/index.py?action=set_webhook"
-    },
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
     {
-      "source": "/api/set_webhook",
-      "destination": "/api/index.py?action=set_webhook"
-    },
-    {
-      "source": "/api/webhook",
-      "destination": "/api/index.py?action=webhook"
-    },
-    {
-      "source": "/webhook",
-      "destination": "/api/index.py?action=webhook"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/api/index.py"
+      "src": "/(.*)",
+      "dest": "api/index.py"
     }
   ]
 }
