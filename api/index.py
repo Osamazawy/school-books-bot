@@ -51,14 +51,15 @@ async def ensure_bot_initialized():
     return app_obj
 
 async def execute_set_webhook():
-    clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'")
-    if not clean_webhook_url:
-        return {"error": "WEBHOOK_URL environment variable is missing"}
-    
-    app_obj = await ensure_bot_initialized()
-    target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
-    success = await app_obj.bot.set_webhook(url=target_url)
-    return {"success": success, "webhook_url": target_url}
+    try:
+        clean_webhook_url = WEBHOOK_URL.strip().strip('"').strip("'") if WEBHOOK_URL else "https://school-books-bot-jrt8.vercel.app"
+        app_obj = await ensure_bot_initialized()
+        target_url = f"{clean_webhook_url.rstrip('/')}/api/webhook"
+        success = await app_obj.bot.set_webhook(url=target_url)
+        return JSONResponse(status_code=200, content={"success": success, "webhook_url": target_url})
+    except Exception as e:
+        print(f"Error setting webhook: {e}\n{traceback.format_exc()}", flush=True)
+        return JSONResponse(status_code=200, content={"status": "error", "message": str(e), "traceback": traceback.format_exc()})
 
 async def execute_webhook(request: Request):
     try:
