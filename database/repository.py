@@ -57,20 +57,20 @@ async def add_stage(name: str) -> Optional[int]:
 
 async def get_all_stages() -> List[Dict[str, Any]]:
     async with get_db_connection() as db:
-        async with db.execute("SELECT id, name FROM stages ORDER BY id ASC;") as cursor:
+        async with db.execute("SELECT id, name, COALESCE(sort_order, id) as sort_order FROM stages ORDER BY sort_order ASC, id ASC;") as cursor:
             rows = await cursor.fetchall()
             return [_dict(row) for row in rows]
 
 async def get_all_stages_with_classes() -> List[Dict[str, Any]]:
-    """جلب جميع المراحل مع صفوفها التابعة لعرضها في شاشة واحدة جليلة."""
+    """جلب جميع المراحل مع صفوفها التابعة لعرضها في شاشة واحدة جليلة مرتبة حسب الترتيب الصحيح."""
     async with get_db_connection() as db:
-        async with db.execute("SELECT id, name FROM stages ORDER BY id ASC;") as cursor:
+        async with db.execute("SELECT id, name, COALESCE(sort_order, id) as sort_order FROM stages ORDER BY sort_order ASC, id ASC;") as cursor:
             stage_rows = await cursor.fetchall()
             stages = [_dict(r) for r in stage_rows]
             
         result = []
         for stage in stages:
-            async with db.execute("SELECT id, stage_id, name FROM classes WHERE stage_id = ? ORDER BY id ASC;", (stage['id'],)) as cursor:
+            async with db.execute("SELECT id, stage_id, name, COALESCE(sort_order, id) as sort_order FROM classes WHERE stage_id = ? ORDER BY sort_order ASC, id ASC;", (stage['id'],)) as cursor:
                 class_rows = await cursor.fetchall()
                 classes = [_dict(r) for r in class_rows]
             result.append({
@@ -81,7 +81,7 @@ async def get_all_stages_with_classes() -> List[Dict[str, Any]]:
 
 async def get_stage_by_id(stage_id: int) -> Optional[Dict[str, Any]]:
     async with get_db_connection() as db:
-        async with db.execute("SELECT id, name FROM stages WHERE id = ?;", (stage_id,)) as cursor:
+        async with db.execute("SELECT id, name, COALESCE(sort_order, id) as sort_order FROM stages WHERE id = ?;", (stage_id,)) as cursor:
             row = await cursor.fetchone()
             return _dict(row) if row else None
 
@@ -119,14 +119,14 @@ async def add_class(stage_id: int, name: str) -> Optional[int]:
 
 async def get_classes_by_stage(stage_id: int) -> List[Dict[str, Any]]:
     async with get_db_connection() as db:
-        async with db.execute("SELECT id, stage_id, name FROM classes WHERE stage_id = ? ORDER BY id ASC;", (stage_id,)) as cursor:
+        async with db.execute("SELECT id, stage_id, name, COALESCE(sort_order, id) as sort_order FROM classes WHERE stage_id = ? ORDER BY sort_order ASC, id ASC;", (stage_id,)) as cursor:
             rows = await cursor.fetchall()
             return [_dict(row) for row in rows]
 
 async def get_class_by_id(class_id: int) -> Optional[Dict[str, Any]]:
     async with get_db_connection() as db:
         async with db.execute("""
-            SELECT c.id, c.stage_id, c.name, st.name as stage_name
+            SELECT c.id, c.stage_id, c.name, COALESCE(c.sort_order, c.id) as sort_order, st.name as stage_name
             FROM classes c
             JOIN stages st ON c.stage_id = st.id
             WHERE c.id = ?;
@@ -162,17 +162,23 @@ async def add_book_for_class(class_id: int, title: str, description: str, telegr
     """إضافة كتاب مباشرة لصف دراسي."""
     async with get_db_connection() as db:
         cursor = await db.execute("""
-            INSERT INTO books (class_id, title, description, telegram_file_id)
-            VALUES (?, ?, ?, ?);
+            INSERT INTO books (class_id, title, description, telegram_file_id, downloads_count)
+            VALUES (?, ?, ?, ?, 0);
         """, (class_id, title.strip(), description.strip() if description else "", telegram_file_id.strip()))
         await db.commit()
         return getattr(cursor, 'lastrowid', None)
+
+async def increment_book_download_count(book_id: int) -> None:
+    """زيادة عداد تحميل الكتاب بمقدار +1."""
+    async with get_db_connection() as db:
+        await db.execute("UPDATE books SET downloads_count = COALESCE(downloads_count, 0) + 1 WHERE id = ?;", (book_id,))
+        await db.commit()
 
 async def get_books_by_class(class_id: int) -> List[Dict[str, Any]]:
     """استرجاع جميع كتب صف محدد."""
     async with get_db_connection() as db:
         async with db.execute("""
-            SELECT id, class_id, title, description, telegram_file_id, created_at
+            SELECT id, class_id, title, description, telegram_file_id, COALESCE(downloads_count, 0) as downloads_count, created_at
             FROM books WHERE class_id = ? ORDER BY id ASC;
         """, (class_id,)) as cursor:
             rows = await cursor.fetchall()
@@ -182,7 +188,8 @@ async def get_book_by_id(book_id: int) -> Optional[Dict[str, Any]]:
     """استرجاع تفاصيل كتاب واحد بجميع تفاصيله الهيكلية."""
     async with get_db_connection() as db:
         async with db.execute("""
-            SELECT b.id, b.class_id, b.title, b.description, b.telegram_file_id, b.created_at,
+            SELECT b.id, b.class_id, b.title, b.description, b.telegram_file_id,
+                   COALESCE(b.downloads_count, 0) as downloads_count, b.created_at,
                    c.name as class_name, c.stage_id, st.name as stage_name
             FROM books b
             JOIN classes c ON b.class_id = c.id
@@ -198,6 +205,7 @@ async def search_books(query: str) -> List[Dict[str, Any]]:
     async with get_db_connection() as db:
         async with db.execute("""
             SELECT b.id, b.title, b.description, b.telegram_file_id,
+                   COALESCE(b.downloads_count, 0) as downloads_count,
                    c.name as class_name, st.name as stage_name
             FROM books b
             JOIN classes c ON b.class_id = c.id
@@ -235,6 +243,29 @@ async def get_books_count() -> int:
             row = await cursor.fetchone()
             val = _val(row, 0)
             return val if val else 0
+
+async def get_total_downloads_count() -> int:
+    """إجمالي عدد التحميلات في البوت."""
+    async with get_db_connection() as db:
+        async with db.execute("SELECT SUM(COALESCE(downloads_count, 0)) FROM books;") as cursor:
+            row = await cursor.fetchone()
+            val = _val(row, 0)
+            return val if val else 0
+
+async def get_top_downloaded_books(limit: int = 5) -> List[Dict[str, Any]]:
+    """أكثر الكتب تحميلاً."""
+    async with get_db_connection() as db:
+        async with db.execute("""
+            SELECT b.id, b.title, COALESCE(b.downloads_count, 0) as downloads_count,
+                   c.name as class_name, st.name as stage_name
+            FROM books b
+            JOIN classes c ON b.class_id = c.id
+            JOIN stages st ON c.stage_id = st.id
+            WHERE COALESCE(b.downloads_count, 0) > 0
+            ORDER BY b.downloads_count DESC, b.id DESC LIMIT ?;
+        """, (limit,)) as cursor:
+            rows = await cursor.fetchall()
+            return [_dict(row) for row in rows]
 
 async def get_stage_breakdown() -> List[Dict[str, Any]]:
     """استرجاع توزيع عدد الكتب حسب المراحل."""

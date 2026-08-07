@@ -73,19 +73,29 @@ async def admin_stats_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
         stages_cnt = await repository.get_stages_count()
         classes_cnt = await repository.get_classes_count()
         books_cnt = await repository.get_books_count()
+        total_downloads = await repository.get_total_downloads_count()
         breakdown = await repository.get_stage_breakdown()
+        top_books = await repository.get_top_downloaded_books(limit=5)
         
         breakdown_text = ""
         for item in breakdown:
             breakdown_text += f"   • {item['stage_name']}: {item['books_cnt']} كتاب\n"
+
+        top_books_text = ""
+        if top_books:
+            top_books_text = "\n🔥 <b>الكتب الأكثر تحميلاً:</b>\n"
+            for tb in top_books:
+                top_books_text += f"   • 📖 <b>{tb['title']}</b> ({tb['class_name']}): {tb['downloads_count']} مرة\n"
 
         stats_text = (
             "📊 <b>الإحصائيات الشاملة للنظام</b>\n\n"
             f"👥 <b>إجمالي المشتركين:</b> {users_cnt}\n"
             f"🏛️ <b>عدد المراحل:</b> {stages_cnt}\n"
             f"🎓 <b>عدد الصفوف:</b> {classes_cnt}\n"
-            f"📚 <b>إجمالي الكتب المرفوعة:</b> {books_cnt}\n\n"
+            f"📚 <b>إجمالي الكتب المرفوعة:</b> {books_cnt}\n"
+            f"📥 <b>إجمالي عمليات التحميل:</b> {total_downloads}\n\n"
             f"📋 <b>توزيع الكتب حسب المراحل:</b>\n{breakdown_text if breakdown_text else '   لا توجد كتب حالياً.'}"
+            f"{top_books_text}"
         )
     except Exception as e:
         logger.error(f"خطأ أثناء جلب الإحصائيات: {e}")

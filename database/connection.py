@@ -141,15 +141,27 @@ async def init_db():
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS stages (
                         id SERIAL PRIMARY KEY,
-                        name VARCHAR(255) NOT NULL UNIQUE
+                        name VARCHAR(255) NOT NULL UNIQUE,
+                        sort_order INTEGER DEFAULT 0
                     );
                     CREATE TABLE IF NOT EXISTS classes (
                         id SERIAL PRIMARY KEY,
                         stage_id INTEGER NOT NULL REFERENCES stages(id) ON DELETE CASCADE,
-                        name VARCHAR(255) NOT NULL
+                        name VARCHAR(255) NOT NULL,
+                        sort_order INTEGER DEFAULT 0
                     );
                 """)
                 conn.commit()
+
+                # إضافة الأعمدة الجديدة وسواقتها إن لم تكن موجودة
+                try:
+                    cur.execute("ALTER TABLE stages ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;")
+                    cur.execute("ALTER TABLE classes ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;")
+                    cur.execute("UPDATE stages SET sort_order = id WHERE sort_order = 0 OR sort_order IS NULL;")
+                    cur.execute("UPDATE classes SET sort_order = id WHERE sort_order = 0 OR sort_order IS NULL;")
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
 
                 # إضافة قيد التفرّد إن لم يكن موجوداً
                 try:
@@ -175,6 +187,7 @@ async def init_db():
                         title VARCHAR(255) NOT NULL,
                         description TEXT,
                         telegram_file_id TEXT NOT NULL,
+                        downloads_count INTEGER DEFAULT 0,
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
                     );
                     CREATE TABLE IF NOT EXISTS users (
@@ -186,14 +199,20 @@ async def init_db():
                 """)
                 conn.commit()
 
+                try:
+                    cur.execute("ALTER TABLE books ADD COLUMN IF NOT EXISTS downloads_count INTEGER DEFAULT 0;")
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
+
                 # 4. إدراج المراحل والصفوف الافتراضية بأمان
                 try:
-                    cur.execute("INSERT INTO stages (id, name) VALUES (1, 'المرحلة الابتدائية'), (2, 'المرحلة المتوسطة'), (3, 'المرحلة الإعدادية') ON CONFLICT (id) DO NOTHING;")
+                    cur.execute("INSERT INTO stages (id, name, sort_order) VALUES (1, 'المرحلة الابتدائية', 1), (2, 'المرحلة المتوسطة', 2), (3, 'المرحلة الإعدادية', 3) ON CONFLICT (id) DO NOTHING;")
                     cur.execute("""
-                        INSERT INTO classes (stage_id, name) VALUES 
-                            (1, 'الأول الابتدائي'), (1, 'الثاني الابتدائي'), (1, 'الثالث الابتدائي'), (1, 'الرابع الابتدائي'), (1, 'الخامس الابتدائي'), (1, 'السادس الابتدائي'),
-                            (2, 'الأول المتوسط'), (2, 'الثاني المتوسط'), (2, 'الثالث المتوسط'),
-                            (3, 'الرابع العلمي'), (3, 'الرابع الأدبي'), (3, 'الخامس العلمي'), (3, 'الخامس الأدبي'), (3, 'السادس العلمي'), (3, 'السادس الأدبي')
+                        INSERT INTO classes (stage_id, name, sort_order) VALUES 
+                            (1, 'الأول الابتدائي', 1), (1, 'الثاني الابتدائي', 2), (1, 'الثالث الابتدائي', 3), (1, 'الرابع الابتدائي', 4), (1, 'الخامس الابتدائي', 5), (1, 'السادس الابتدائي', 6),
+                            (2, 'الأول المتوسط', 1), (2, 'الثاني المتوسط', 2), (2, 'الثالث المتوسط', 3),
+                            (3, 'الرابع العلمي', 1), (3, 'الرابع الأدبي', 2), (3, 'الخامس العلمي', 3), (3, 'الخامس الأدبي', 4), (3, 'السادس العلمي', 5), (3, 'السادس الأدبي', 6)
                         ON CONFLICT DO NOTHING;
                     """)
                     conn.commit()
@@ -211,7 +230,8 @@ async def init_db():
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS stages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL UNIQUE
+                    name TEXT NOT NULL UNIQUE,
+                    sort_order INTEGER DEFAULT 0
                 );
             """)
             await db.execute("""
@@ -219,6 +239,7 @@ async def init_db():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     stage_id INTEGER NOT NULL,
                     name TEXT NOT NULL,
+                    sort_order INTEGER DEFAULT 0,
                     FOREIGN KEY (stage_id) REFERENCES stages (id) ON DELETE CASCADE,
                     UNIQUE (stage_id, name)
                 );
@@ -231,6 +252,7 @@ async def init_db():
                     title TEXT NOT NULL,
                     description TEXT,
                     telegram_file_id TEXT NOT NULL,
+                    downloads_count INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (class_id) REFERENCES classes (id) ON DELETE CASCADE
                 );
@@ -243,6 +265,22 @@ async def init_db():
                     join_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)
+            await db.commit()
+
+            # إضافة الأعمدة الجديدة لـ SQLite إن لم تكن موجودة
+            for col_sql in [
+                "ALTER TABLE stages ADD COLUMN sort_order INTEGER DEFAULT 0;",
+                "ALTER TABLE classes ADD COLUMN sort_order INTEGER DEFAULT 0;",
+                "ALTER TABLE books ADD COLUMN downloads_count INTEGER DEFAULT 0;"
+            ]:
+                try:
+                    await db.execute(col_sql)
+                    await db.commit()
+                except Exception:
+                    pass
+
+            await db.execute("UPDATE stages SET sort_order = id WHERE sort_order = 0 OR sort_order IS NULL;")
+            await db.execute("UPDATE classes SET sort_order = id WHERE sort_order = 0 OR sort_order IS NULL;")
             await db.commit()
 
     logger.info("تم إعداد قاعدة البيانات بنجاح.")
