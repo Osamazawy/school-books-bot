@@ -160,24 +160,18 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
             await query.edit_message_text("❌ خطأ: هذا الكتاب غير موجود.")
         return
 
-    # 1. تحديث الرسالة فوراً لحالة التحميل وإخفاء زر التحميل لمنع التكرار
-    loading_caption = (
+    # تحديث البطاقة فوراً لحالة النجاح ومنع التكرار
+    success_caption = (
         f"📖 <b>{book['title']}</b>\n"
         f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
-        "⏳ <b>جاري تحضير وإرسال الملف... يرجى الانتظار</b>"
+        "✅ <b>تم إرسال ملف الـ PDF بنجاح</b>"
     )
-    loading_kb = inline.InlineKeyboardMarkup([[inline.InlineKeyboardButton("⏳ جاري التحميل...", callback_data="info_noop")]])
+    success_kb = inline.InlineKeyboardMarkup([[inline.InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{book['class_id']}")]])
     if query:
         try:
-            await query.edit_message_text(loading_caption, parse_mode="HTML", reply_markup=loading_kb)
+            await query.edit_message_text(success_caption, parse_mode="HTML", reply_markup=success_kb)
         except Exception:
             pass
-
-    chat_id = query.message.chat_id if query and query.message else update.effective_chat.id
-    try:
-        await context.bot.send_chat_action(chat_id=chat_id, action="upload_document")
-    except Exception:
-        pass
 
     caption = (
         f"📚 <b>{book['title']}</b>\n"
@@ -192,19 +186,6 @@ async def download_book_handler(update: Update, context: ContextTypes.DEFAULT_TY
             parse_mode="HTML"
         )
         await repository.record_download_log(book_id, query.from_user.id if query and query.from_user else 0)
-        
-        # 2. تحديث الرسالة فوراً لحالة النجاح واستبدال الزر بشرط العودة للكتب
-        success_caption = (
-            f"📖 <b>{book['title']}</b>\n"
-            f"🎓 <b>الصف:</b> {book['class_name']}\n\n"
-            "✅ <b>تم إرسال ملف الـ PDF بنجاح</b>"
-        )
-        success_kb = inline.InlineKeyboardMarkup([[inline.InlineKeyboardButton("↩️ العودة للكتب", callback_data=f"user_class_{book['class_id']}")]])
-        if query:
-            try:
-                await query.edit_message_text(success_caption, parse_mode="HTML", reply_markup=success_kb)
-            except Exception:
-                pass
         logger.info(f"تم إرسال الكتاب {book['id']} ({book['title']}) بنجاح.")
     except Exception as e:
         logger.error(f"خطأ إرسال الملف: {e}")
